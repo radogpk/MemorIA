@@ -1,5 +1,9 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { MemoriaProvider } from '@/lib/storage/store';
+import { Sidebar } from '@/components/layout/Sidebar';
+import { BottomNavigation } from '@/components/layout/BottomNavigation';
+import { AppHeader } from '@/components/layout/AppHeader';
 
 export const metadata: Metadata = {
   title: 'memorIA - Agenda y Calendario Académico',
@@ -27,7 +31,21 @@ export default function RootLayout({
   return (
     <html lang="es" className="dark">
       <body className="min-h-screen bg-[#090d16] text-slate-100 antialiased selection:bg-blue-600/30 selection:text-blue-200">
-        {children}
+        <MemoriaProvider>
+          <div className="flex h-screen overflow-hidden bg-[#090d16]">
+            {/* Desktop Sidebar */}
+            <Sidebar />
+
+            <div className="flex flex-1 flex-col overflow-hidden">
+              <AppHeader />
+              <main className="flex-1 overflow-y-auto pb-16 md:pb-0">
+                {children}
+              </main>
+              {/* Mobile Bottom Navigation */}
+              <BottomNavigation />
+            </div>
+          </div>
+        </MemoriaProvider>
       </body>
     </html>
   );

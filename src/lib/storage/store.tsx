@@ -23,9 +23,9 @@ interface MemoriaContextType {
 const MemoriaContext = createContext<MemoriaContextType | null>(null);
 
 export function MemoriaProvider({ children }: { children: React.ReactNode }) {
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [recurrentClasses, setRecurrentClasses] = useState<RecurrentClass[]>([]);
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
+  const [recurrentClasses, setRecurrentClasses] = useState<RecurrentClass[]>(INITIAL_RECURRENT_CLASSES);
+  const [activities, setActivities] = useState<Activity[]>(getInitialActivities());
   const [isLoaded, setIsLoaded] = useState(false);
 
   // Load from localStorage or initial seed
