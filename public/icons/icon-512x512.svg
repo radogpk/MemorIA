@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#4f46e5" />
+    </linearGradient>
+    <linearGradient id="sparkGrad512" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fde047" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+  </defs>
+  <!-- Background with rounded corners -->
+  <rect width="512" height="512" rx="100" fill="url(#bgGrad512)" />
+  
+  <!-- Calendar Body -->
+  <rect x="96" y="128" width="320" height="282" rx="48" fill="#ffffff" />
+  <path d="M96 208h320v202a48 48 0 0 1-48 48H144a48 48 0 0 1-48-48V208z" fill="#f1f5f9" />
+  <rect x="96" y="128" width="320" height="80" rx="48" fill="#1d4ed8" />
+  <rect x="96" y="176" width="320" height="32" fill="#1d4ed8" />
+  
+  <!-- Calendar Rings -->
+  <rect x="165" y="96" width="32" height="64" rx="16" fill="#0f172a" />
+  <rect x="315" y="96" width="32" height="64" rx="16" fill="#0f172a" />
+  
+  <!-- "m" letter inside calendar -->
+  <text x="256" y="375" font-family="system-ui, -apple-system, sans-serif" font-size="150" font-weight="900" fill="#2563eb" text-anchor="middle">m</text>
+  
+  <!-- AI Sparkle star on the corner -->
+  <path d="M380 96l10 32 32 10-32 10-10 32-10-32-32-10 32-10z" fill="url(#sparkGrad512)" />
+</svg>
