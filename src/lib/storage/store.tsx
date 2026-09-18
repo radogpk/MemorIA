@@ -31,15 +31,20 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
   // Load from localStorage or initial seed
   useEffect(() => {
     try {
-      const storedSubs = localStorage.getItem('memoria_subjects');
-      const storedClasses = localStorage.getItem('memoria_classes');
-      const storedActivities = localStorage.getItem('memoria_activities');
+      const storedSubs = localStorage.getItem('memoria_v2_subjects');
+      const storedClasses = localStorage.getItem('memoria_v2_classes');
+      const storedActivities = localStorage.getItem('memoria_v2_activities');
 
       if (storedSubs && storedClasses && storedActivities) {
         setSubjects(JSON.parse(storedSubs));
         setRecurrentClasses(JSON.parse(storedClasses));
         setActivities(JSON.parse(storedActivities));
       } else {
+        // Clean any old v1 keys
+        localStorage.removeItem('memoria_subjects');
+        localStorage.removeItem('memoria_classes');
+        localStorage.removeItem('memoria_activities');
+
         setSubjects(INITIAL_SUBJECTS);
         setRecurrentClasses(INITIAL_RECURRENT_CLASSES);
         setActivities(getInitialActivities());
@@ -58,9 +63,9 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoaded) return;
     try {
-      localStorage.setItem('memoria_subjects', JSON.stringify(subjects));
-      localStorage.setItem('memoria_classes', JSON.stringify(recurrentClasses));
-      localStorage.setItem('memoria_activities', JSON.stringify(activities));
+      localStorage.setItem('memoria_v2_subjects', JSON.stringify(subjects));
+      localStorage.setItem('memoria_v2_classes', JSON.stringify(recurrentClasses));
+      localStorage.setItem('memoria_v2_activities', JSON.stringify(activities));
     } catch (e) {
       console.error('Error saving to localStorage', e);
     }

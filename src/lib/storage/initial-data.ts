@@ -2,37 +2,85 @@ import { Subject, RecurrentClass, Activity } from '@/types/database.types';
 
 export const INITIAL_SUBJECTS: Subject[] = [
   {
-    id: 'sub-calc',
+    id: 'sub-innovacion',
     user_id: 'default-user',
-    name: 'Cálculo Diferencial',
-    code: 'MAT-101',
-    color: '#3b82f6',
-    professor: 'Dr. Gauss',
-    classroom: 'Aula 204',
+    name: 'Innovación',
+    code: 'INN-101',
+    color: '#f59e0b',
+    professor: 'Profesor de Innovación',
+    classroom: 'H-203',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'sub-redes',
+    id: 'sub-discreta',
     user_id: 'default-user',
-    name: 'Redes de Computadoras',
-    code: 'RED-201',
-    color: '#06b6d4',
-    professor: 'Ing. Tanenbaum',
-    classroom: 'Lab Redes 3',
+    name: 'Matemática Discreta',
+    code: 'DISC-102',
+    color: '#ec4899',
+    professor: 'Profesor de Discreta',
+    classroom: 'H-202',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
   },
   {
-    id: 'sub-ed',
+    id: 'sub-estadistica',
     user_id: 'default-user',
-    name: 'Estructuras de Datos',
-    code: 'CS-103',
+    name: 'Estadística y Probabilidades',
+    code: 'EST-201',
+    color: '#eab308',
+    professor: 'Plaza a Contratar',
+    classroom: 'H-202',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'sub-ia',
+    user_id: 'default-user',
+    name: 'Inteligencia Artificial',
+    code: 'IA-301',
+    color: '#8b5cf6',
+    professor: 'Profesor de IA',
+    classroom: 'H-205',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'sub-arq-soft',
+    user_id: 'default-user',
+    name: 'Arquitectura de Software',
+    code: 'ARQ-302',
     color: '#10b981',
-    professor: 'Dra. Lovelace',
-    classroom: 'Aula 102',
+    professor: 'Profesor de Arquitectura',
+    classroom: 'H-205',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'sub-sist-oper',
+    user_id: 'default-user',
+    name: 'Sistemas Operativos',
+    code: 'SO-203',
+    color: '#06b6d4',
+    professor: 'Profesor de Sistemas Operativos',
+    classroom: 'H-203',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'sub-trabajo',
+    user_id: 'default-user',
+    name: 'Trabajo Continuo',
+    code: 'TRAB',
+    color: '#64748b',
+    professor: null,
+    classroom: 'Remoto / Oficina',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -40,95 +88,319 @@ export const INITIAL_SUBJECTS: Subject[] = [
 ];
 
 export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
-  // Cálculo: Lunes y Miércoles 08:00 - 10:00
+  // 1. INNOVACIÓN
+  // Lunes 07:00 - 09:00 (Teoría / H-203)
   {
-    id: 'rec-calc-lun',
+    id: 'rec-inn-lun',
     user_id: 'default-user',
-    subject_id: 'sub-calc',
-    day_of_week: 1, // Lunes
-    start_time: '08:00',
-    end_time: '10:00',
-    classroom: 'Aula 204',
+    subject_id: 'sub-innovacion',
+    day_of_week: 1,
+    start_time: '07:00',
+    end_time: '09:00',
+    classroom: 'Teoría / H-203',
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[0],
   },
+  // Viernes 18:00 - 20:00 (Lab 01 (H-212))
   {
-    id: 'rec-calc-mie',
+    id: 'rec-inn-vie',
     user_id: 'default-user',
-    subject_id: 'sub-calc',
-    day_of_week: 3, // Miércoles
-    start_time: '08:00',
-    end_time: '10:00',
-    classroom: 'Aula 204',
+    subject_id: 'sub-innovacion',
+    day_of_week: 5,
+    start_time: '18:00',
+    end_time: '20:00',
+    classroom: 'Lab 01 (H-212)',
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[0],
   },
-  // Redes: Martes y Jueves 10:00 - 12:00
+
+  // 2. MATEMÁTICA DISCRETA
+  // Miércoles 07:00 - 09:00 (H-202)
   {
-    id: 'rec-redes-mar',
+    id: 'rec-disc-mie',
     user_id: 'default-user',
-    subject_id: 'sub-redes',
-    day_of_week: 2, // Martes
-    start_time: '10:00',
-    end_time: '12:00',
-    classroom: 'Lab Redes 3',
+    subject_id: 'sub-discreta',
+    day_of_week: 3,
+    start_time: '07:00',
+    end_time: '09:00',
+    classroom: 'H-202',
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[1],
   },
+  // Jueves 09:00 - 10:00 (H-202)
   {
-    id: 'rec-redes-jue',
+    id: 'rec-disc-jue',
     user_id: 'default-user',
-    subject_id: 'sub-redes',
-    day_of_week: 4, // Jueves
-    start_time: '10:00',
-    end_time: '12:00',
-    classroom: 'Lab Redes 3',
+    subject_id: 'sub-discreta',
+    day_of_week: 4,
+    start_time: '09:00',
+    end_time: '10:00',
+    classroom: 'H-202',
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[1],
   },
-  // Estructuras de Datos: Viernes 14:00 - 17:00
+
+  // 3. ESTADÍSTICA Y PROBABILIDADES
+  // Jueves 07:00 - 09:00 (H-202)
   {
-    id: 'rec-ed-vie',
+    id: 'rec-est-jue',
     user_id: 'default-user',
-    subject_id: 'sub-ed',
-    day_of_week: 5, // Viernes
-    start_time: '14:00',
-    end_time: '17:00',
-    classroom: 'Aula 102',
+    subject_id: 'sub-estadistica',
+    day_of_week: 4,
+    start_time: '07:00',
+    end_time: '09:00',
+    classroom: 'H-202',
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[2],
+  },
+  // Miércoles 11:00 - 13:00 (Lab: Estadística y Prob. / Lab 05)
+  {
+    id: 'rec-est-mie',
+    user_id: 'default-user',
+    subject_id: 'sub-estadistica',
+    day_of_week: 3,
+    start_time: '11:00',
+    end_time: '13:00',
+    classroom: 'Lab 05 / Plaza a Contratar',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[2],
+  },
+  // Viernes 14:00 - 16:00 (H-202)
+  {
+    id: 'rec-est-vie',
+    user_id: 'default-user',
+    subject_id: 'sub-estadistica',
+    day_of_week: 5,
+    start_time: '14:00',
+    end_time: '16:00',
+    classroom: 'H-202',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[2],
+  },
+
+  // 4. INTELIGENCIA ARTIFICIAL
+  // Viernes 07:00 - 09:00 (Lab: IA I / Lab 01 (H-212))
+  {
+    id: 'rec-ia-vie',
+    user_id: 'default-user',
+    subject_id: 'sub-ia',
+    day_of_week: 5,
+    start_time: '07:00',
+    end_time: '09:00',
+    classroom: 'Lab 01 (H-212)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[3],
+  },
+  // Martes 16:00 - 18:00 (H-205)
+  {
+    id: 'rec-ia-mar',
+    user_id: 'default-user',
+    subject_id: 'sub-ia',
+    day_of_week: 2,
+    start_time: '16:00',
+    end_time: '18:00',
+    classroom: 'H-205',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[3],
+  },
+  // Jueves 17:00 - 18:00 (H-205)
+  {
+    id: 'rec-ia-jue',
+    user_id: 'default-user',
+    subject_id: 'sub-ia',
+    day_of_week: 4,
+    start_time: '17:00',
+    end_time: '18:00',
+    classroom: 'H-205',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[3],
+  },
+
+  // 5. ARQUITECTURA DE SOFTWARE
+  // Sábado 09:00 - 11:00 (Lab: Arq. Software / Lab 01 (H-212))
+  {
+    id: 'rec-arq-sab',
+    user_id: 'default-user',
+    subject_id: 'sub-arq-soft',
+    day_of_week: 6,
+    start_time: '09:00',
+    end_time: '11:00',
+    classroom: 'Lab 01 (H-212)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[4],
+  },
+  // Viernes 16:00 - 18:00 (H-205)
+  {
+    id: 'rec-arq-vie',
+    user_id: 'default-user',
+    subject_id: 'sub-arq-soft',
+    day_of_week: 5,
+    start_time: '16:00',
+    end_time: '18:00',
+    classroom: 'H-205',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[4],
+  },
+  // Martes 18:00 - 19:00 (H-205)
+  {
+    id: 'rec-arq-mar',
+    user_id: 'default-user',
+    subject_id: 'sub-arq-soft',
+    day_of_week: 2,
+    start_time: '18:00',
+    end_time: '19:00',
+    classroom: 'H-205',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[4],
+  },
+
+  // 6. SISTEMAS OPERATIVOS
+  // Lunes 14:00 - 15:30 (H-203)
+  {
+    id: 'rec-so-lun',
+    user_id: 'default-user',
+    subject_id: 'sub-sist-oper',
+    day_of_week: 1,
+    start_time: '14:00',
+    end_time: '15:30',
+    classroom: 'H-203',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[5],
+  },
+  // Miércoles 14:00 - 16:00 (H-203)
+  {
+    id: 'rec-so-mie',
+    user_id: 'default-user',
+    subject_id: 'sub-sist-oper',
+    day_of_week: 3,
+    start_time: '14:00',
+    end_time: '16:00',
+    classroom: 'H-203',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[5],
+  },
+  // Jueves 18:00 - 20:00 (Lab: Sist. Operativos / Lab 02 (H-213))
+  {
+    id: 'rec-so-jue',
+    user_id: 'default-user',
+    subject_id: 'sub-sist-oper',
+    day_of_week: 4,
+    start_time: '18:00',
+    end_time: '20:00',
+    classroom: 'Lab 02 (H-213)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[5],
+  },
+
+  // 7. TRABAJO CONTINUO
+  // Lunes 09:30 - 13:30 (4.0 hrs)
+  {
+    id: 'rec-trab-lun-1',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 1,
+    start_time: '09:30',
+    end_time: '13:30',
+    classroom: 'Trabajo Continuo (4.0h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Lunes 15:30 - 18:00 (2.5 hrs)
+  {
+    id: 'rec-trab-lun-2',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 1,
+    start_time: '15:30',
+    end_time: '18:00',
+    classroom: 'Trabajo (2.5h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Martes 08:00 - 13:30 (5.5 hrs)
+  {
+    id: 'rec-trab-mar-1',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 2,
+    start_time: '08:00',
+    end_time: '13:30',
+    classroom: 'Trabajo Continuo (5.5h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Martes 14:00 - 16:00 (2.0 hrs)
+  {
+    id: 'rec-trab-mar-2',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 2,
+    start_time: '14:00',
+    end_time: '16:00',
+    classroom: 'Trabajo (2.0h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Jueves 10:30 - 17:00 (6.5 hrs)
+  {
+    id: 'rec-trab-jue',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 4,
+    start_time: '10:30',
+    end_time: '17:00',
+    classroom: 'Trabajo Continuo (6.5h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Viernes 09:30 - 13:30 (4.0 hrs)
+  {
+    id: 'rec-trab-vie',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 5,
+    start_time: '09:30',
+    end_time: '13:30',
+    classroom: 'Trabajo Continuo (4.0h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
+  },
+  // Sábado 11:30 - 18:00 (6.5 hrs)
+  {
+    id: 'rec-trab-sab',
+    user_id: 'default-user',
+    subject_id: 'sub-trabajo',
+    day_of_week: 6,
+    start_time: '11:30',
+    end_time: '18:00',
+    classroom: 'Trabajo Continuo (6.5h)',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[6],
   },
 ];
 
 export function getInitialActivities(): Activity[] {
   const now = new Date();
   
-  // Tarea de cálculo para mañana a las 23:59
+  // Tarea para mañana
   const tomorrow = new Date(now);
   tomorrow.setDate(now.getDate() + 1);
   tomorrow.setHours(23, 59, 0, 0);
 
-  // Examen de Redes para el próximo martes a las 10:00
+  // Examen de Inteligencia Artificial para el próximo martes a las 16:00
   const nextExam = new Date(now);
-  nextExam.setDate(now.getDate() + 5);
-  nextExam.setHours(10, 0, 0, 0);
+  nextExam.setDate(now.getDate() + ((2 + 7 - now.getDay()) % 7 || 7));
+  nextExam.setHours(16, 0, 0, 0);
   const nextExamEnd = new Date(nextExam);
-  nextExamEnd.setHours(12, 0, 0, 0);
-
-  // Reunión de proyecto para pasado mañana a las 15:00
-  const meeting = new Date(now);
-  meeting.setDate(now.getDate() + 2);
-  meeting.setHours(15, 0, 0, 0);
-  const meetingEnd = new Date(meeting);
-  meetingEnd.setHours(16, 30, 0, 0);
+  nextExamEnd.setHours(18, 0, 0, 0);
 
   return [
     {
-      id: 'act-exam-redes',
+      id: 'act-exam-ia',
       user_id: 'default-user',
-      subject_id: 'sub-redes',
-      title: 'Examen Parcial 1: Modelo OSI y Subnetting',
-      description: 'Entran unidades 1, 2 y 3. Llevar calculadora.',
+      subject_id: 'sub-ia',
+      title: 'Examen Parcial: Redes Neuronales y Búsqueda Heurística',
+      description: 'Aula H-205. Llevar apuntes permitidos.',
       type: 'exam',
       status: 'pending',
       start_datetime: nextExam.toISOString(),
@@ -138,14 +410,14 @@ export function getInitialActivities(): Activity[] {
       metadata: {},
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
-      subject: INITIAL_SUBJECTS[1],
+      subject: INITIAL_SUBJECTS[3],
     },
     {
-      id: 'act-task-calc',
+      id: 'act-task-arq',
       user_id: 'default-user',
-      subject_id: 'sub-calc',
-      title: 'Taller de Derivadas Implícitas',
-      description: 'Ejercicios impares del capítulo 3 del Stewart.',
+      subject_id: 'sub-arq-soft',
+      title: 'Entrega de Diagrama de Microservicios',
+      description: 'Documentar arquitectura hexagonal en formato PDF.',
       type: 'task',
       status: 'pending',
       start_datetime: tomorrow.toISOString(),
@@ -155,23 +427,7 @@ export function getInitialActivities(): Activity[] {
       metadata: {},
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
-      subject: INITIAL_SUBJECTS[0],
-    },
-    {
-      id: 'act-meeting-proj',
-      user_id: 'default-user',
-      subject_id: null,
-      title: 'Reunión de Equipo: Proyecto Final',
-      description: 'Videollamada en Google Meet para repartir módulos.',
-      type: 'meeting',
-      status: 'pending',
-      start_datetime: meeting.toISOString(),
-      end_datetime: meetingEnd.toISOString(),
-      is_all_day: false,
-      priority: 'medium',
-      metadata: {},
-      created_at: now.toISOString(),
-      updated_at: now.toISOString(),
+      subject: INITIAL_SUBJECTS[4],
     },
   ];
 }
