@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import { useMemoria } from '@/lib/storage/store';
 import { CalendarViewMode, CalendarEvent } from '@/lib/calendar/types';
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
 import { CalendarHeader } from '@/components/calendar/CalendarHeader';
 import { CalendarFilterBar } from '@/components/calendar/CalendarFilterBar';
 import { WeekView } from '@/components/calendar/WeekView';
@@ -99,12 +100,12 @@ export default function CalendarPage() {
 
       // Filter by Duo viewMode
       if (duoMode === 'mine') {
-        const eventProfile = e.profileId || e.subject?.profile_id || 'prof-luis';
+        const eventProfile = e.profileId || e.subject?.profile_id || GERARDO_PROFILE_ID;
         if (eventProfile !== activeProfile.id && !e.isShared) {
           return false;
         }
       } else if (duoMode === 'partner' && partnerProfile) {
-        const eventProfile = e.profileId || e.subject?.profile_id || 'prof-luis';
+        const eventProfile = e.profileId || e.subject?.profile_id || GERARDO_PROFILE_ID;
         if (eventProfile !== partnerProfile.id && !e.isShared) {
           return false;
         }

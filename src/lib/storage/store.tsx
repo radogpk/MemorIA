@@ -85,8 +85,12 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
       if (storedProfiles) {
         try {
           const parsed = JSON.parse(storedProfiles);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          const hasOldData = parsed.some((p: any) => p.name === 'Luis' || p.id === 'prof-luis');
+          if (Array.isArray(parsed) && parsed.length > 0 && !hasOldData) {
             currentProfiles = parsed;
+          } else {
+            localStorage.removeItem('memoria_profiles');
+            localStorage.removeItem('memoria_active_profile_id');
           }
         } catch {}
       }
@@ -130,14 +134,21 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     // Try background fetch of profiles, subjects, classes and activities from Supabase
     fetchProfiles().then((remoteProfiles) => {
       if (remoteProfiles && remoteProfiles.length > 0) {
-        setProfiles((prev) => {
-          const map = new Map(prev.map((p) => [p.id, p]));
-          remoteProfiles.forEach((rp) => map.set(rp.id, rp));
-          const merged = Array.from(map.values());
+        // Direct replacement: exactly the registered profiles, no duplicates!
+        setProfiles(remoteProfiles);
+        try {
+          localStorage.setItem('memoria_profiles', JSON.stringify(remoteProfiles));
+        } catch {}
+
+        setActiveProfileState((prevActive) => {
+          const matching =
+            remoteProfiles.find((p) => p.id === prevActive.id) ||
+            remoteProfiles.find((p) => p.role === prevActive.role) ||
+            remoteProfiles[0];
           try {
-            localStorage.setItem('memoria_profiles', JSON.stringify(merged));
+            localStorage.setItem('memoria_active_profile_id', matching.id);
           } catch {}
-          return merged;
+          return matching;
         });
       }
     });

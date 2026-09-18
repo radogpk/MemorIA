@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Activity } from '@/types/database.types';
+import { EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 import { Check, Clock, Edit2, Trash2, Calendar, AlertCircle } from 'lucide-react';
 import { format, isPast, isToday, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -108,9 +109,9 @@ export function TaskItem({ activity, onToggle, onEdit, onDelete }: Props) {
               </span>
             )}
 
-            {!activity.is_shared && activity.profile_id === 'prof-novia' && (
+            {!activity.is_shared && (activity.profile_id === EVEBEBE_PROFILE_ID || activity.profile_id === 'prof-novia') && (
               <span className="rounded bg-pink-900/30 px-1.5 py-0.5 text-[10px] text-pink-400 font-medium">
-                Novia
+                Evebebé
               </span>
             )}
 

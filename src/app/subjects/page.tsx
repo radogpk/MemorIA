@@ -6,6 +6,7 @@ import { SubjectCard } from '@/components/subjects/SubjectCard';
 import { SubjectFormModal } from '@/components/subjects/SubjectFormModal';
 import { ScheduleSlot } from '@/components/subjects/ClassScheduleSelector';
 import { Subject, CreateSubjectInput } from '@/types/database.types';
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 
 export default function SubjectsPage() {
@@ -60,7 +61,7 @@ export default function SubjectsPage() {
 
   const filteredSubjects = subjects.filter((s) => {
     if (!selectedProfileId) return true;
-    const sProfile = s.profile_id || 'prof-luis';
+    const sProfile = s.profile_id || GERARDO_PROFILE_ID;
     return sProfile === selectedProfileId;
   });
 
@@ -98,7 +99,7 @@ export default function SubjectsPage() {
           Todas ({subjects.length})
         </button>
         {profiles.map((p) => {
-          const count = subjects.filter((s) => (s.profile_id || 'prof-luis') === p.id).length;
+          const count = subjects.filter((s) => (s.profile_id || GERARDO_PROFILE_ID) === p.id).length;
           const isActive = selectedProfileId === p.id;
           return (
             <button

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Subject, RecurrentClass } from '@/types/database.types';
+import { EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 import { Edit2, Trash2, MapPin, User, Clock } from 'lucide-react';
 
 interface Props {
@@ -36,9 +37,9 @@ export function SubjectCard({ subject, classes, onEdit, onDelete }: Props) {
                 <h3 className="font-semibold text-white group-hover:text-blue-300 transition">
                   {subject.name}
                 </h3>
-                {subject.profile_id === 'prof-novia' && (
+                {(subject.profile_id === EVEBEBE_PROFILE_ID || subject.profile_id === 'prof-novia') && (
                   <span className="rounded bg-pink-900/40 px-1.5 py-0.5 text-[9px] font-semibold text-pink-300 border border-pink-500/30">
-                    💖 Pareja
+                    💖 Evebebé
                   </span>
                 )}
               </div>

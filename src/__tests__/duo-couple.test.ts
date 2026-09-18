@@ -1,13 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { DEFAULT_PROFILES } from '@/lib/supabase/data';
+import { DEFAULT_PROFILES, GERARDO_PROFILE_ID, EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 import { projectRecurrentClassesForRange, formatActivitiesToCalendarEvents } from '@/lib/calendar/projection';
 import type { RecurrentClass, Activity, Subject } from '@/types/database.types';
 
 describe('Duo & Couple Management Engine', () => {
-  const mockSubjectLuis: Subject = {
-    id: 'sub-luis',
+  const mockSubjectGerardo: Subject = {
+    id: 'sub-gerardo',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Inteligencia Artificial',
     code: 'IA-301',
     color: '#8b5cf6',
@@ -18,23 +18,23 @@ describe('Duo & Couple Management Engine', () => {
     updated_at: '2026-09-01T00:00:00Z',
   };
 
-  const mockClassLuis: RecurrentClass = {
-    id: 'rec-luis',
+  const mockClassGerardo: RecurrentClass = {
+    id: 'rec-gerardo',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
-    subject_id: 'sub-luis',
+    profile_id: GERARDO_PROFILE_ID,
+    subject_id: 'sub-gerardo',
     day_of_week: 1, // Lunes
     start_time: '08:00',
     end_time: '10:00',
     classroom: 'H-205',
     created_at: '2026-09-01T00:00:00Z',
-    subject: mockSubjectLuis,
+    subject: mockSubjectGerardo,
   };
 
-  const mockSubjectNovia: Subject = {
-    id: 'sub-novia',
+  const mockSubjectEvebebe: Subject = {
+    id: 'sub-evebebe',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     name: 'Diseño UX/UI',
     code: 'UX-101',
     color: '#ec4899',
@@ -45,25 +45,25 @@ describe('Duo & Couple Management Engine', () => {
     updated_at: '2026-09-01T00:00:00Z',
   };
 
-  const mockClassNovia: RecurrentClass = {
-    id: 'rec-novia',
+  const mockClassEvebebe: RecurrentClass = {
+    id: 'rec-evebebe',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
-    subject_id: 'sub-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
+    subject_id: 'sub-evebebe',
     day_of_week: 1, // Lunes
     start_time: '10:00',
     end_time: '12:00',
     classroom: 'Lab 3',
     created_at: '2026-09-01T00:00:00Z',
-    subject: mockSubjectNovia,
+    subject: mockSubjectEvebebe,
   };
 
   const mockActivities: Activity[] = [
     {
-      id: 'act-luis',
+      id: 'act-gerardo',
       user_id: 'default-user',
-      profile_id: 'prof-luis',
-      subject_id: 'sub-luis',
+      profile_id: GERARDO_PROFILE_ID,
+      subject_id: 'sub-gerardo',
       title: 'Estudiar IA',
       description: null,
       type: 'task',
@@ -78,10 +78,10 @@ describe('Duo & Couple Management Engine', () => {
       updated_at: '2026-09-01T00:00:00Z',
     },
     {
-      id: 'act-novia',
+      id: 'act-evebebe',
       user_id: 'default-user',
-      profile_id: 'prof-novia',
-      subject_id: 'sub-novia',
+      profile_id: EVEBEBE_PROFILE_ID,
+      subject_id: 'sub-evebebe',
       title: 'Entrega Figma',
       description: null,
       type: 'task',
@@ -98,7 +98,7 @@ describe('Duo & Couple Management Engine', () => {
     {
       id: 'act-cita',
       user_id: 'default-user',
-      profile_id: 'prof-luis',
+      profile_id: GERARDO_PROFILE_ID,
       subject_id: null,
       title: '💖 Cita en Pareja',
       description: 'Cena juntos',
@@ -115,11 +115,13 @@ describe('Duo & Couple Management Engine', () => {
     },
   ];
 
-  it('should have default profiles for Luis and partner with zero friction', () => {
+  it('should have default profiles for Gerardo and Evebebé with zero friction', () => {
     expect(DEFAULT_PROFILES).toHaveLength(2);
-    expect(DEFAULT_PROFILES[0].id).toBe('prof-luis');
+    expect(DEFAULT_PROFILES[0].id).toBe(GERARDO_PROFILE_ID);
+    expect(DEFAULT_PROFILES[0].name).toBe('Gerardo');
     expect(DEFAULT_PROFILES[0].role).toBe('owner');
-    expect(DEFAULT_PROFILES[1].id).toBe('prof-novia');
+    expect(DEFAULT_PROFILES[1].id).toBe(EVEBEBE_PROFILE_ID);
+    expect(DEFAULT_PROFILES[1].name).toBe('Evebebé');
     expect(DEFAULT_PROFILES[1].role).toBe('partner');
   });
 
@@ -127,16 +129,16 @@ describe('Duo & Couple Management Engine', () => {
     const rangeStart = new Date('2026-09-21T00:00:00');
     const rangeEnd = new Date('2026-09-27T23:59:59');
 
-    const projected = projectRecurrentClassesForRange([mockClassLuis, mockClassNovia], rangeStart, rangeEnd);
+    const projected = projectRecurrentClassesForRange([mockClassGerardo, mockClassEvebebe], rangeStart, rangeEnd);
     expect(projected).toHaveLength(2);
-    expect(projected[0].profileId).toBe('prof-luis');
-    expect(projected[1].profileId).toBe('prof-novia');
+    expect(projected[0].profileId).toBe(GERARDO_PROFILE_ID);
+    expect(projected[1].profileId).toBe(EVEBEBE_PROFILE_ID);
 
     const formatted = formatActivitiesToCalendarEvents(mockActivities);
     expect(formatted).toHaveLength(3);
-    expect(formatted[0].profileId).toBe('prof-luis');
+    expect(formatted[0].profileId).toBe(GERARDO_PROFILE_ID);
     expect(formatted[0].isShared).toBe(false);
-    expect(formatted[1].profileId).toBe('prof-novia');
+    expect(formatted[1].profileId).toBe(EVEBEBE_PROFILE_ID);
     expect(formatted[2].isShared).toBe(true);
   });
 
@@ -144,31 +146,31 @@ describe('Duo & Couple Management Engine', () => {
     const rangeStart = new Date('2026-09-21T00:00:00');
     const rangeEnd = new Date('2026-09-27T23:59:59');
 
-    const projected = projectRecurrentClassesForRange([mockClassLuis, mockClassNovia], rangeStart, rangeEnd);
+    const projected = projectRecurrentClassesForRange([mockClassGerardo, mockClassEvebebe], rangeStart, rangeEnd);
     const formatted = formatActivitiesToCalendarEvents(mockActivities);
     const all = [...projected, ...formatted];
 
     // Mode 'both'
     expect(all).toHaveLength(5);
 
-    // Mode 'mine' (Luis + shared)
+    // Mode 'mine' (Gerardo + shared)
     const mineEvents = all.filter((e) => {
       const pid = e.profileId || e.subject?.profile_id;
-      return pid === 'prof-luis' || e.isShared;
+      return pid === GERARDO_PROFILE_ID || e.isShared;
     });
     expect(mineEvents.map((e) => e.id)).toEqual(
-      expect.arrayContaining(['act-luis', 'act-cita', expect.stringContaining('rec-luis')])
+      expect.arrayContaining(['act-gerardo', 'act-cita', expect.stringContaining('rec-gerardo')])
     );
-    expect(mineEvents.some((e) => e.id === 'act-novia')).toBe(false);
+    expect(mineEvents.some((e) => e.id === 'act-evebebe')).toBe(false);
 
-    // Mode 'partner' (Novia + shared)
+    // Mode 'partner' (Evebebé + shared)
     const partnerEvents = all.filter((e) => {
       const pid = e.profileId || e.subject?.profile_id;
-      return pid === 'prof-novia' || e.isShared;
+      return pid === EVEBEBE_PROFILE_ID || e.isShared;
     });
     expect(partnerEvents.map((e) => e.id)).toEqual(
-      expect.arrayContaining(['act-novia', 'act-cita', expect.stringContaining('rec-novia')])
+      expect.arrayContaining(['act-evebebe', 'act-cita', expect.stringContaining('rec-evebebe')])
     );
-    expect(partnerEvents.some((e) => e.id === 'act-luis')).toBe(false);
+    expect(partnerEvents.some((e) => e.id === 'act-gerardo')).toBe(false);
   });
 });

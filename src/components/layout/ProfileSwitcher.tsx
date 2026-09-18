@@ -3,6 +3,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useMemoria } from '@/lib/storage/store';
 import { UserProfile } from '@/types/database.types';
+import { GERARDO_PROFILE_ID, EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 import { Users, Check, Heart, Edit2, Sparkles, ChevronDown } from 'lucide-react';
 
 export function ProfileSwitcher() {
@@ -44,7 +45,7 @@ export function ProfileSwitcher() {
     setIsEditing(null);
   };
 
-  const isGirlfriend = activeProfile.role === 'partner' || activeProfile.id === 'prof-novia';
+  const isEvebebe = activeProfile.role === 'partner' || activeProfile.id === EVEBEBE_PROFILE_ID;
 
   return (
     <div className="relative" ref={dropdownRef}>
@@ -58,7 +59,7 @@ export function ProfileSwitcher() {
           className="flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold text-white shadow-inner"
           style={{ backgroundColor: activeProfile.avatar_color }}
         >
-          {isGirlfriend ? '💖' : activeProfile.name.charAt(0).toUpperCase()}
+          {isEvebebe ? '💖' : activeProfile.name.charAt(0).toUpperCase()}
         </span>
         <span className="max-w-[85px] truncate font-medium sm:max-w-[120px]">
           {activeProfile.nickname || activeProfile.name}
@@ -81,7 +82,7 @@ export function ProfileSwitcher() {
           <div className="mt-1 space-y-1">
             {profiles.map((p) => {
               const isSelected = p.id === activeProfile.id;
-              const isPartner = p.role === 'partner' || p.id === 'prof-novia';
+              const isPartner = p.role === 'partner' || p.id === EVEBEBE_PROFILE_ID;
 
               return (
                 <div
@@ -131,7 +132,7 @@ export function ProfileSwitcher() {
                             {isPartner && <Heart className="h-3 w-3 text-pink-400 fill-pink-400" />}
                           </div>
                           <p className="text-[10px] text-slate-400 truncate">
-                            {isPartner ? 'Perfil Pareja' : 'Perfil Principal'}
+                            {isPartner ? 'Perfil Evebebé' : 'Perfil Gerardo'}
                           </p>
                         </>
                       )}

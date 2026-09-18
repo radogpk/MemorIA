@@ -20,32 +20,51 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
+
 interface Props {
   onOpenQuickAdd: () => void;
   onOpenPlanner: () => void;
 }
 
 export function DailyBriefing({ onOpenQuickAdd, onOpenPlanner }: Props) {
-  const { subjects, recurrentClasses, activities, toggleActivityStatus } = useMemoria();
+  const { subjects, recurrentClasses, activities, toggleActivityStatus, activeProfile } = useMemoria();
 
   const now = new Date();
   const dayStart = startOfDay(now);
   const dayEnd = endOfDay(now);
 
+  // Filter individual data strictly for the active person
+  const userSubjects = useMemo(() => {
+    return subjects.filter((s) => (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id);
+  }, [subjects, activeProfile]);
+
+  const userClasses = useMemo(() => {
+    return recurrentClasses.filter(
+      (c) => (c.profile_id || c.subject?.profile_id || GERARDO_PROFILE_ID) === activeProfile.id
+    );
+  }, [recurrentClasses, activeProfile]);
+
+  const userActivities = useMemo(() => {
+    return activities.filter(
+      (a) => (a.profile_id || GERARDO_PROFILE_ID) === activeProfile.id || a.is_shared
+    );
+  }, [activities, activeProfile]);
+
   const status = useMemo(() => {
-    const projected = projectRecurrentClassesForRange(recurrentClasses, dayStart, dayEnd);
-    const actEvents = formatActivitiesToCalendarEvents(activities);
+    const projected = projectRecurrentClassesForRange(userClasses, dayStart, dayEnd);
+    const actEvents = formatActivitiesToCalendarEvents(userActivities);
     const combined = [...projected, ...actEvents];
 
     return calculateDailyStatus(combined, now);
-  }, [recurrentClasses, activities]);
+  }, [userClasses, userActivities]);
 
-  // Next upcoming exam
+  // Next upcoming exam for active user
   const nextExam = useMemo(() => {
-    return activities
+    return userActivities
       .filter((a) => a.type === 'exam' && new Date(a.start_datetime) > now)
       .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
-  }, [activities]);
+  }, [userActivities]);
 
   const greeting = () => {
     const hour = now.getHours();
@@ -66,7 +85,7 @@ export function DailyBriefing({ onOpenQuickAdd, onOpenPlanner }: Props) {
             {capitalizedToday}
           </span>
           <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-            {greeting()}, estudiante 🎓
+            {greeting()}, {activeProfile.nickname || activeProfile.name} {activeProfile.role === 'partner' ? '💖' : '🎓'}
           </h1>
         </div>
 
@@ -313,10 +332,10 @@ export function DailyBriefing({ onOpenQuickAdd, onOpenPlanner }: Props) {
           {/* Direct Link to subjects */}
           <div className="rounded-xl border border-slate-800 bg-[#0d1320] p-4">
             <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Tus Asignaturas ({subjects.length})
+              Tus Asignaturas ({userSubjects.length})
             </h3>
             <div className="mt-2 space-y-1">
-              {subjects.slice(0, 4).map((s) => (
+              {userSubjects.slice(0, 4).map((s) => (
                 <div key={s.id} className="flex items-center justify-between text-xs text-slate-400">
                   <div className="flex items-center gap-2 truncate">
                     <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />

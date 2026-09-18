@@ -1,10 +1,11 @@
 import { Subject, RecurrentClass, Activity } from '@/types/database.types';
+import { GERARDO_PROFILE_ID, EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 
 export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-innovacion',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Innovación',
     code: 'INN-101',
     color: '#f59e0b',
@@ -17,7 +18,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-discreta',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Matemática Discreta',
     code: 'DISC-102',
     color: '#ec4899',
@@ -30,7 +31,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-estadistica',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Estadística y Probabilidades',
     code: 'EST-201',
     color: '#eab308',
@@ -43,7 +44,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-ia',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Inteligencia Artificial',
     code: 'IA-301',
     color: '#8b5cf6',
@@ -56,7 +57,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-arq-soft',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Arquitectura de Software',
     code: 'ARQ-302',
     color: '#10b981',
@@ -69,7 +70,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-sist-oper',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Sistemas Operativos',
     code: 'SO-203',
     color: '#06b6d4',
@@ -82,7 +83,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-trabajo',
     user_id: 'default-user',
-    profile_id: 'prof-luis',
+    profile_id: GERARDO_PROFILE_ID,
     name: 'Trabajo Continuo',
     code: 'TRAB',
     color: '#64748b',
@@ -96,7 +97,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-novia-ux',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     name: 'Diseño UX/UI & Prototipado',
     code: 'UX-101',
     color: '#ec4899',
@@ -109,7 +110,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-novia-mkt',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     name: 'Marketing Digital & Métricas',
     code: 'MKT-202',
     color: '#f43f5e',
@@ -416,7 +417,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-novia-ux-mar',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     subject_id: 'sub-novia-ux',
     day_of_week: 2,
     start_time: '10:00',
@@ -429,7 +430,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-novia-ux-jue',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     subject_id: 'sub-novia-ux',
     day_of_week: 4,
     start_time: '10:00',
@@ -442,7 +443,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-novia-mkt-vie',
     user_id: 'default-user',
-    profile_id: 'prof-novia',
+    profile_id: EVEBEBE_PROFILE_ID,
     subject_id: 'sub-novia-mkt',
     day_of_week: 5,
     start_time: '14:00',
@@ -479,7 +480,7 @@ export function getInitialActivities(): Activity[] {
     {
       id: 'act-exam-ia',
       user_id: 'default-user',
-      profile_id: 'prof-luis',
+      profile_id: GERARDO_PROFILE_ID,
       subject_id: 'sub-ia',
       title: 'Examen Parcial: Redes Neuronales y Búsqueda Heurística',
       description: 'Aula H-205. Llevar apuntes permitidos.',
@@ -498,7 +499,7 @@ export function getInitialActivities(): Activity[] {
     {
       id: 'act-task-arq',
       user_id: 'default-user',
-      profile_id: 'prof-luis',
+      profile_id: GERARDO_PROFILE_ID,
       subject_id: 'sub-arq-soft',
       title: 'Entrega de Diagrama de Microservicios',
       description: 'Documentar arquitectura hexagonal en formato PDF.',
@@ -518,7 +519,7 @@ export function getInitialActivities(): Activity[] {
     {
       id: 'act-cita-pareja',
       user_id: 'default-user',
-      profile_id: 'prof-luis',
+      profile_id: GERARDO_PROFILE_ID,
       subject_id: null,
       title: '💖 Cita / Cena & Paseo juntos',
       description: 'Salir a cenar y ver una película.',
@@ -538,7 +539,7 @@ export function getInitialActivities(): Activity[] {
     {
       id: 'act-novia-ux',
       user_id: 'default-user',
-      profile_id: 'prof-novia',
+      profile_id: EVEBEBE_PROFILE_ID,
       subject_id: 'sub-novia-ux',
       title: 'Entrega de Wireframes de App Móvil en Figma',
       description: 'Subir enlace público del prototipo interactivo.',

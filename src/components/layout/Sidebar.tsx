@@ -5,13 +5,21 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Calendar, BookOpen, CheckSquare, Sparkles, LayoutDashboard } from 'lucide-react';
 import { useMemoria } from '@/lib/storage/store';
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { subjects, activities } = useMemoria();
+  const { subjects, activities, activeProfile } = useMemoria();
+
+  const userSubjects = subjects.filter(
+    (s) => (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id
+  );
 
   const pendingTasksCount = activities.filter(
-    (a) => a.type === 'task' && a.status !== 'completed'
+    (a) =>
+      a.type === 'task' &&
+      a.status !== 'completed' &&
+      ((a.profile_id || GERARDO_PROFILE_ID) === activeProfile.id || a.is_shared)
   ).length;
 
   const navItems = [
@@ -31,7 +39,7 @@ export function Sidebar() {
       label: 'Materias & Horario',
       href: '/subjects',
       icon: BookOpen,
-      badge: subjects.length,
+      badge: userSubjects.length,
     },
     {
       label: 'Tareas & Entregas',
@@ -93,10 +101,10 @@ export function Sidebar() {
       {/* Active Subjects quick list */}
       <div className="mt-8 border-t border-slate-800/80 pt-4">
         <h2 className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          Mis Materias ({subjects.length})
+          Mis Materias ({userSubjects.length})
         </h2>
         <div className="mt-2 space-y-1">
-          {subjects.map((s) => (
+          {userSubjects.map((s) => (
             <div
               key={s.id}
               className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/40"

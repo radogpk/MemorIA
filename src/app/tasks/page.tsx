@@ -7,6 +7,7 @@ import { ActivityModal } from '@/components/tasks/ActivityModal';
 import { QuickAddModal } from '@/components/ai/QuickAddModal';
 import { Plus, Sparkles, Search, CheckSquare } from 'lucide-react';
 import { Activity } from '@/types/database.types';
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
 
 export default function TasksPage() {
   const {
@@ -34,10 +35,10 @@ export default function TasksPage() {
 
     // Filter by Duo viewMode
     if (duoMode === 'mine') {
-      const actProfile = act.profile_id || act.subject?.profile_id || 'prof-luis';
+      const actProfile = act.profile_id || act.subject?.profile_id || GERARDO_PROFILE_ID;
       if (actProfile !== activeProfile.id && !act.is_shared) return false;
     } else if (duoMode === 'partner' && partnerProfile) {
-      const actProfile = act.profile_id || act.subject?.profile_id || 'prof-luis';
+      const actProfile = act.profile_id || act.subject?.profile_id || GERARDO_PROFILE_ID;
       if (actProfile !== partnerProfile.id && !act.is_shared) return false;
     }
 

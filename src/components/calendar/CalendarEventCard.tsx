@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { CalendarEvent } from '@/lib/calendar/types';
+import { EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
 import { format } from 'date-fns';
 import { Clock, MapPin, AlertTriangle, CheckCircle, Check, Users } from 'lucide-react';
 
@@ -109,9 +110,9 @@ export function CalendarEventCard({
           </span>
         )}
 
-        {!event.isShared && event.profileId === 'prof-novia' && (
+        {!event.isShared && (event.profileId === EVEBEBE_PROFILE_ID || event.profileId === 'prof-novia') && (
           <span className="flex items-center gap-0.5 rounded bg-pink-900/30 px-1 py-0.5 text-[9px] font-medium text-pink-400">
-            <span>Novia</span>
+            <span>Evebebé</span>
           </span>
         )}
 
