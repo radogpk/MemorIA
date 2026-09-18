@@ -2,6 +2,13 @@
 -- memorIA Database Schema: Modo Dúo / Pareja (PostgreSQL para Supabase)
 -- ==============================================================================
 
+-- OPCIÓN A (RECOMENDADA: Empezar 100% limpio con tus materias oficiales):
+-- Descomenta estas 4 líneas si deseas limpiar las tablas viejas y crearlas desde cero:
+-- DROP TABLE IF EXISTS activities CASCADE;
+-- DROP TABLE IF EXISTS recurrent_classes CASCADE;
+-- DROP TABLE IF EXISTS subjects CASCADE;
+-- DROP TABLE IF EXISTS user_profiles CASCADE;
+
 -- 1. Habilitar extensión para UUIDs
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
@@ -15,7 +22,24 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 3. Tabla: subjects (Materias / Asignaturas)
+-- 3. Migración automática: Si las tablas ya existían previamente sin las columnas del Modo Dúo
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'subjects') THEN
+        ALTER TABLE subjects ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'recurrent_classes') THEN
+        ALTER TABLE recurrent_classes ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE;
+    END IF;
+
+    IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'activities') THEN
+        ALTER TABLE activities ADD COLUMN IF NOT EXISTS profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE;
+        ALTER TABLE activities ADD COLUMN IF NOT EXISTS is_shared BOOLEAN NOT NULL DEFAULT false;
+    END IF;
+END $$;
+
+-- 4. Tabla: subjects (Materias / Asignaturas)
 CREATE TABLE IF NOT EXISTS subjects (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
@@ -30,7 +54,7 @@ CREATE TABLE IF NOT EXISTS subjects (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 4. Tabla: recurrent_classes (Horario Semanal Recurrente)
+-- 5. Tabla: recurrent_classes (Horario Semanal Recurrente)
 -- day_of_week: 1 = Lunes, 2 = Martes, 3 = Miércoles, 4 = Jueves, 5 = Viernes, 6 = Sábado, 7 = Domingo
 CREATE TABLE IF NOT EXISTS recurrent_classes (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -43,7 +67,7 @@ CREATE TABLE IF NOT EXISTS recurrent_classes (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
--- 5. Tabla: activities (Tareas, Exámenes, Reuniones y Citas Compartidas)
+-- 6. Tabla: activities (Tareas, Exámenes, Reuniones y Citas Compartidas)
 CREATE TABLE IF NOT EXISTS activities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     profile_id UUID REFERENCES user_profiles(id) ON DELETE CASCADE,
