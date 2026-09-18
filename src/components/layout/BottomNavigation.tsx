@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, BookOpen, CheckSquare, Sparkles } from 'lucide-react';
+import { Calendar, BookOpen, CheckSquare, Sparkles, LayoutDashboard } from 'lucide-react';
 import { QuickAddModal } from '@/components/ai/QuickAddModal';
 
 export function BottomNavigation() {
@@ -11,6 +11,7 @@ export function BottomNavigation() {
   const [isAiOpen, setIsAiOpen] = useState(false);
 
   const navItems = [
+    { label: 'Mi Día', href: '/today', icon: LayoutDashboard },
     { label: 'Calendario', href: '/calendar', icon: Calendar },
     { label: 'Materias', href: '/subjects', icon: BookOpen },
     { label: 'Tareas', href: '/tasks', icon: CheckSquare },

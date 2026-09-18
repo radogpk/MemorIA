@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Calendar, BookOpen, CheckSquare, Sparkles } from 'lucide-react';
+import { Calendar, BookOpen, CheckSquare, Sparkles, LayoutDashboard } from 'lucide-react';
 import { useMemoria } from '@/lib/storage/store';
 
 export function Sidebar() {
@@ -15,6 +15,12 @@ export function Sidebar() {
   ).length;
 
   const navItems = [
+    {
+      label: 'Mi Día',
+      href: '/today',
+      icon: LayoutDashboard,
+      badge: 'Hoy',
+    },
     {
       label: 'Calendario',
       href: '/calendar',

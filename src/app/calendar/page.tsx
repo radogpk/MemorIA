@@ -10,6 +10,8 @@ import { DayView } from '@/components/calendar/DayView';
 import { MonthView } from '@/components/calendar/MonthView';
 import { ActivityModal } from '@/components/tasks/ActivityModal';
 import { QuickAddModal } from '@/components/ai/QuickAddModal';
+import { SmartStudyPlannerModal } from '@/components/calendar/SmartStudyPlannerModal';
+import { generateIcsCalendarContent, downloadIcsFile } from '@/lib/calendar/ics-export';
 import {
   projectRecurrentClassesForRange,
   detectCollisions,
@@ -40,6 +42,7 @@ export default function CalendarPage() {
   const [selectedSlot, setSelectedSlot] = useState<{ date: Date; hour: number } | null>(null);
   const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isStudyPlannerOpen, setIsStudyPlannerOpen] = useState(false);
 
   // Date range determination based on view mode
   const { rangeStart, rangeEnd } = useMemo(() => {
@@ -139,6 +142,11 @@ export default function CalendarPage() {
           setSelectedSlot(null);
           setIsActivityModalOpen(true);
         }}
+        onExportIcs={() => {
+          const content = generateIcsCalendarContent(subjects, recurrentClasses, activities);
+          downloadIcsFile('horario-memoria.ics', content);
+        }}
+        onOpenStudyPlanner={() => setIsStudyPlannerOpen(true)}
       />
 
       {/* Filter Bar */}
@@ -207,6 +215,12 @@ export default function CalendarPage() {
       <QuickAddModal
         isOpen={isAiModalOpen}
         onClose={() => setIsAiModalOpen(false)}
+      />
+
+      <SmartStudyPlannerModal
+        isOpen={isStudyPlannerOpen}
+        onClose={() => setIsStudyPlannerOpen(false)}
+        busyEvents={allEvents}
       />
     </div>
   );

@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { Sparkles, Plus, Calendar, BookOpen, CheckSquare } from 'lucide-react';
 import { QuickAddModal } from '@/components/ai/QuickAddModal';
+import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
 
 export function AppHeader() {
   const [isAiOpen, setIsAiOpen] = useState(false);
@@ -26,6 +27,9 @@ export function AppHeader() {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Live Activity Status badge */}
+          <LiveStatusBadge />
+
           {/* Quick-Add button with memorIA AI */}
           <button
             onClick={() => setIsAiOpen(true)}
