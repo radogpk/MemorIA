@@ -9,7 +9,17 @@ import { Subject, CreateSubjectInput } from '@/types/database.types';
 import { Plus, BookOpen, Clock } from 'lucide-react';
 
 export default function SubjectsPage() {
-  const { subjects, recurrentClasses, addSubject, updateSubject, deleteSubject } = useMemoria();
+  const {
+    subjects,
+    recurrentClasses,
+    addSubject,
+    updateSubject,
+    deleteSubject,
+    profiles,
+    activeProfile,
+    partnerProfile,
+  } = useMemoria();
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 
@@ -48,6 +58,12 @@ export default function SubjectsPage() {
         }))
     : [];
 
+  const filteredSubjects = subjects.filter((s) => {
+    if (!selectedProfileId) return true;
+    const sProfile = s.profile_id || 'prof-luis';
+    return sProfile === selectedProfileId;
+  });
+
   return (
     <div className="mx-auto max-w-6xl p-4 md:p-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -69,14 +85,49 @@ export default function SubjectsPage() {
         </button>
       </div>
 
-      {subjects.length === 0 ? (
+      {/* Profile filter pills */}
+      <div className="mt-4 flex flex-wrap items-center gap-2">
+        <button
+          onClick={() => setSelectedProfileId(null)}
+          className={`rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+            selectedProfileId === null
+              ? 'bg-blue-600 text-white shadow-sm'
+              : 'bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-white'
+          }`}
+        >
+          Todas ({subjects.length})
+        </button>
+        {profiles.map((p) => {
+          const count = subjects.filter((s) => (s.profile_id || 'prof-luis') === p.id).length;
+          const isActive = selectedProfileId === p.id;
+          return (
+            <button
+              key={p.id}
+              onClick={() => setSelectedProfileId(p.id)}
+              className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                isActive
+                  ? 'bg-blue-600 text-white shadow-sm'
+                  : 'bg-slate-800 text-slate-400 hover:bg-slate-750 hover:text-white'
+              }`}
+            >
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{ backgroundColor: p.avatar_color }}
+              />
+              <span>{p.nickname || p.name} ({count})</span>
+            </button>
+          );
+        })}
+      </div>
+
+      {filteredSubjects.length === 0 ? (
         <div className="mt-12 flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-800 p-12 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-500/10 text-blue-400">
             <BookOpen className="h-6 w-6" />
           </div>
-          <h3 className="mt-4 text-base font-semibold text-white">No tienes materias registradas</h3>
+          <h3 className="mt-4 text-base font-semibold text-white">No hay materias para este filtro</h3>
           <p className="mt-1 max-w-md text-xs text-slate-400">
-            Agrega tu primera materia con sus días y horarios para que aparezcan automáticamente en tu calendario semanal.
+            Agrega una materia con sus días y horarios para que aparezcan en el horario de este perfil.
           </p>
           <button
             onClick={handleOpenCreate}
@@ -88,7 +139,7 @@ export default function SubjectsPage() {
         </div>
       ) : (
         <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {subjects.map((subject) => (
+          {filteredSubjects.map((subject) => (
             <SubjectCard
               key={subject.id}
               subject={subject}

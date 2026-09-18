@@ -101,6 +101,19 @@ export function TaskItem({ activity, onToggle, onEdit, onDelete }: Props) {
             {/* Priority */}
             {getPriorityBadge()}
 
+            {/* Couple Shared Badge */}
+            {activity.is_shared && (
+              <span className="rounded bg-pink-500/20 px-1.5 py-0.5 text-[10px] font-bold text-pink-300 border border-pink-500/30">
+                💖 Juntos
+              </span>
+            )}
+
+            {!activity.is_shared && activity.profile_id === 'prof-novia' && (
+              <span className="rounded bg-pink-900/30 px-1.5 py-0.5 text-[10px] text-pink-400 font-medium">
+                Novia
+              </span>
+            )}
+
             {/* Type badge if not standard task */}
             {activity.type !== 'task' && (
               <span className="rounded bg-slate-800 px-1.5 py-0.5 text-[10px] uppercase font-bold text-slate-300">

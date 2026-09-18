@@ -18,6 +18,10 @@ export interface CalendarEvent {
   sourceRecurrentClass?: RecurrentClass;
   hasCollision?: boolean;
   collisionWith?: string[];
+  profileId?: string | null;
+  profileName?: string;
+  isShared?: boolean;
 }
 
 export type CalendarViewMode = 'day' | 'week' | 'month';
+export type DuoViewMode = 'mine' | 'partner' | 'both';

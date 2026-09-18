@@ -21,11 +21,13 @@ export function ActivityModal({
   initialHour,
   initialActivity,
 }: Props) {
-  const { subjects, addActivity, updateActivity, deleteActivity } = useMemoria();
+  const { subjects, profiles, activeProfile, partnerProfile, addActivity, updateActivity, deleteActivity } = useMemoria();
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<ActivityType>('task');
+  const [profileId, setProfileId] = useState<string>(activeProfile.id);
+  const [isShared, setIsShared] = useState<boolean>(false);
   const [subjectId, setSubjectId] = useState<string>('');
   const [startDate, setStartDate] = useState('');
   const [startTime, setStartTime] = useState('08:00');
@@ -42,6 +44,8 @@ export function ActivityModal({
       setSubjectId(initialActivity.subject_id || '');
       setPriority(initialActivity.priority);
       setStatus(initialActivity.status);
+      setProfileId(initialActivity.profile_id || activeProfile.id);
+      setIsShared(!!initialActivity.is_shared);
 
       const start = new Date(initialActivity.start_datetime);
       setStartDate(format(start, 'yyyy-MM-dd'));
@@ -64,13 +68,15 @@ export function ActivityModal({
       setDescription('');
       setType('task');
       setSubjectId(subjects[0]?.id || '');
+      setProfileId(activeProfile.id);
+      setIsShared(false);
       setStartTime(`${hourStr}:00`);
       setEndTime(`${nextHourStr}:00`);
       setPriority('medium');
       setStatus('pending');
     }
     setErrorMessage(null);
-  }, [initialActivity, initialDate, initialHour, isOpen, subjects]);
+  }, [initialActivity, initialDate, initialHour, isOpen, subjects, activeProfile.id]);
 
   if (!isOpen) return null;
 
@@ -90,6 +96,8 @@ export function ActivityModal({
       title: title.trim(),
       description: description.trim() || null,
       type,
+      profile_id: profileId,
+      is_shared: isShared,
       subject_id: subjectId || null,
       start_datetime: startDatetime,
       end_datetime: endDatetime,
@@ -194,6 +202,51 @@ export function ActivityModal({
                 <option value="urgent">Urgente 🔥</option>
               </select>
             </div>
+          </div>
+
+          {/* Duo Profile Owner & Shared Activity */}
+          <div className="rounded-xl border border-slate-700/80 bg-slate-800/40 p-3">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              ¿A quién pertenece?
+            </label>
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
+              {profiles.map((p) => {
+                const isSelected = profileId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setProfileId(p.id)}
+                    className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: p.avatar_color }}
+                    />
+                    <span>{p.nickname || p.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Shared toggle */}
+            <label className="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-300 hover:text-white transition">
+              <input
+                type="checkbox"
+                checked={isShared}
+                onChange={(e) => setIsShared(e.target.checked)}
+                className="h-4 w-4 rounded border-slate-600 bg-slate-800 text-pink-500 focus:ring-pink-400 focus:ring-offset-0"
+              />
+              <span className="flex items-center gap-1">
+                <span>💖</span>
+                <span className="font-semibold text-pink-300">Actividad compartida en pareja</span>
+                <span className="text-slate-400 text-[11px]">(Visible en ambos calendarios)</span>
+              </span>
+            </label>
           </div>
 
           {/* Associated Subject */}

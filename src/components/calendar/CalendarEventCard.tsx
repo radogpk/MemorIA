@@ -94,13 +94,27 @@ export function CalendarEventCard({
       )}
 
       {/* Top Header: Badge & Time */}
-      <div className="flex items-center gap-1.5 leading-none">
+      <div className="flex items-center gap-1.5 leading-none flex-wrap">
         <span
           className="rounded px-1 py-0.5 text-[9px] font-bold uppercase tracking-wider"
           style={{ backgroundColor: style.badgeBg, color: style.accent }}
         >
           {style.badgeText}
         </span>
+
+        {event.isShared && (
+          <span className="flex items-center gap-0.5 rounded bg-pink-500/20 px-1 py-0.5 text-[9px] font-bold text-pink-300 border border-pink-500/40">
+            <span className="text-[9px]">💖</span>
+            <span>Juntos</span>
+          </span>
+        )}
+
+        {!event.isShared && event.profileId === 'prof-novia' && (
+          <span className="flex items-center gap-0.5 rounded bg-pink-900/30 px-1 py-0.5 text-[9px] font-medium text-pink-400">
+            <span>Novia</span>
+          </span>
+        )}
+
         <span className="text-[10px] font-medium text-slate-300">
           {startTimeStr} - {endTimeStr}
         </span>

@@ -32,9 +32,16 @@ export function SubjectCard({ subject, classes, onEdit, onDelete }: Props) {
               style={{ backgroundColor: subject.color, boxShadow: `0 0 0 2px ${subject.color}` }}
             />
             <div>
-              <h3 className="font-semibold text-white group-hover:text-blue-300 transition">
-                {subject.name}
-              </h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="font-semibold text-white group-hover:text-blue-300 transition">
+                  {subject.name}
+                </h3>
+                {subject.profile_id === 'prof-novia' && (
+                  <span className="rounded bg-pink-900/40 px-1.5 py-0.5 text-[9px] font-semibold text-pink-300 border border-pink-500/30">
+                    💖 Pareja
+                  </span>
+                )}
+              </div>
               {subject.code && (
                 <span className="text-[11px] font-mono text-slate-400">
                   {subject.code}

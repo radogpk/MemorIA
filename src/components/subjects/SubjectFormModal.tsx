@@ -5,6 +5,7 @@ import { X, BookOpen, AlertCircle } from 'lucide-react';
 import { Subject, CreateSubjectInput } from '@/types/database.types';
 import { ClassScheduleSelector, ScheduleSlot } from './ClassScheduleSelector';
 import { validateSubjectInput, validateClassScheduleSlot } from '@/lib/actions/subjects-validation';
+import { useMemoria } from '@/lib/storage/store';
 
 interface Props {
   isOpen: boolean;
@@ -32,6 +33,8 @@ export function SubjectFormModal({
   initialSubject,
   initialSlots = [],
 }: Props) {
+  const { profiles, activeProfile } = useMemoria();
+  const [profileId, setProfileId] = useState<string>(activeProfile.id);
   const [name, setName] = useState('');
   const [code, setCode] = useState('');
   const [color, setColor] = useState('#3b82f6');
@@ -42,6 +45,7 @@ export function SubjectFormModal({
 
   useEffect(() => {
     if (initialSubject) {
+      setProfileId(initialSubject.profile_id || activeProfile.id);
       setName(initialSubject.name);
       setCode(initialSubject.code || '');
       setColor(initialSubject.color);
@@ -49,6 +53,7 @@ export function SubjectFormModal({
       setClassroom(initialSubject.classroom || '');
       setSlots(initialSlots);
     } else {
+      setProfileId(activeProfile.id);
       setName('');
       setCode('');
       setColor('#3b82f6');
@@ -57,7 +62,7 @@ export function SubjectFormModal({
       setSlots([]);
     }
     setErrorMessage(null);
-  }, [initialSubject, initialSlots, isOpen]);
+  }, [initialSubject, initialSlots, isOpen, activeProfile.id]);
 
   if (!isOpen) return null;
 
@@ -89,6 +94,7 @@ export function SubjectFormModal({
         professor: professor.trim() || null,
         classroom: classroom.trim() || null,
         is_active: true,
+        profile_id: profileId,
       },
       slots
     );
@@ -126,6 +132,36 @@ export function SubjectFormModal({
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          {/* Profile Owner Selection */}
+          <div className="rounded-xl border border-slate-800 bg-slate-800/40 p-3">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
+              ¿A qué perfil corresponde esta materia?
+            </label>
+            <div className="flex flex-wrap items-center gap-2">
+              {profiles.map((p) => {
+                const isSelected = profileId === p.id;
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setProfileId(p.id)}
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
+                      isSelected
+                        ? 'bg-blue-600 text-white shadow-sm'
+                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                    }`}
+                  >
+                    <span
+                      className="h-2 w-2 rounded-full"
+                      style={{ backgroundColor: p.avatar_color }}
+                    />
+                    <span>{p.nickname || p.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             <div className="sm:col-span-2">
               <label className="block text-xs font-medium text-slate-400">

@@ -4,6 +4,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-innovacion',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Innovación',
     code: 'INN-101',
     color: '#f59e0b',
@@ -16,6 +17,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-discreta',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Matemática Discreta',
     code: 'DISC-102',
     color: '#ec4899',
@@ -28,6 +30,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-estadistica',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Estadística y Probabilidades',
     code: 'EST-201',
     color: '#eab308',
@@ -40,6 +43,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-ia',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Inteligencia Artificial',
     code: 'IA-301',
     color: '#8b5cf6',
@@ -52,6 +56,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-arq-soft',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Arquitectura de Software',
     code: 'ARQ-302',
     color: '#10b981',
@@ -64,6 +69,7 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-sist-oper',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Sistemas Operativos',
     code: 'SO-203',
     color: '#06b6d4',
@@ -76,11 +82,39 @@ export const INITIAL_SUBJECTS: Subject[] = [
   {
     id: 'sub-trabajo',
     user_id: 'default-user',
+    profile_id: 'prof-luis',
     name: 'Trabajo Continuo',
     code: 'TRAB',
     color: '#64748b',
     professor: null,
     classroom: 'Remoto / Oficina',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  // Cursos de Mi Novia (Pareja)
+  {
+    id: 'sub-novia-ux',
+    user_id: 'default-user',
+    profile_id: 'prof-novia',
+    name: 'Diseño UX/UI & Prototipado',
+    code: 'UX-101',
+    color: '#ec4899',
+    professor: 'Docente UX',
+    classroom: 'Lab Creativo 3',
+    is_active: true,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  },
+  {
+    id: 'sub-novia-mkt',
+    user_id: 'default-user',
+    profile_id: 'prof-novia',
+    name: 'Marketing Digital & Métricas',
+    code: 'MKT-202',
+    color: '#f43f5e',
+    professor: 'Docente Marketing',
+    classroom: 'A-104',
     is_active: true,
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -377,6 +411,46 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
     created_at: new Date().toISOString(),
     subject: INITIAL_SUBJECTS[6],
   },
+  // Recurrent classes de Mi Novia (Pareja)
+  // Martes 10:00 - 12:00 (Diseño UX/UI)
+  {
+    id: 'rec-novia-ux-mar',
+    user_id: 'default-user',
+    profile_id: 'prof-novia',
+    subject_id: 'sub-novia-ux',
+    day_of_week: 2,
+    start_time: '10:00',
+    end_time: '12:00',
+    classroom: 'Lab Creativo 3',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[7],
+  },
+  // Jueves 10:00 - 12:00 (Diseño UX/UI)
+  {
+    id: 'rec-novia-ux-jue',
+    user_id: 'default-user',
+    profile_id: 'prof-novia',
+    subject_id: 'sub-novia-ux',
+    day_of_week: 4,
+    start_time: '10:00',
+    end_time: '12:00',
+    classroom: 'Lab Creativo 3',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[7],
+  },
+  // Viernes 14:00 - 16:00 (Marketing Digital)
+  {
+    id: 'rec-novia-mkt-vie',
+    user_id: 'default-user',
+    profile_id: 'prof-novia',
+    subject_id: 'sub-novia-mkt',
+    day_of_week: 5,
+    start_time: '14:00',
+    end_time: '16:00',
+    classroom: 'A-104',
+    created_at: new Date().toISOString(),
+    subject: INITIAL_SUBJECTS[8],
+  },
 ];
 
 export function getInitialActivities(): Activity[] {
@@ -394,10 +468,18 @@ export function getInitialActivities(): Activity[] {
   const nextExamEnd = new Date(nextExam);
   nextExamEnd.setHours(18, 0, 0, 0);
 
+  // Cita de pareja para este viernes o sábado a las 19:00
+  const coupleDate = new Date(now);
+  coupleDate.setDate(now.getDate() + ((6 + 7 - now.getDay()) % 7 || 1));
+  coupleDate.setHours(19, 0, 0, 0);
+  const coupleDateEnd = new Date(coupleDate);
+  coupleDateEnd.setHours(21, 30, 0, 0);
+
   return [
     {
       id: 'act-exam-ia',
       user_id: 'default-user',
+      profile_id: 'prof-luis',
       subject_id: 'sub-ia',
       title: 'Examen Parcial: Redes Neuronales y Búsqueda Heurística',
       description: 'Aula H-205. Llevar apuntes permitidos.',
@@ -407,6 +489,7 @@ export function getInitialActivities(): Activity[] {
       end_datetime: nextExamEnd.toISOString(),
       is_all_day: false,
       priority: 'high',
+      is_shared: false,
       metadata: {},
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
@@ -415,6 +498,7 @@ export function getInitialActivities(): Activity[] {
     {
       id: 'act-task-arq',
       user_id: 'default-user',
+      profile_id: 'prof-luis',
       subject_id: 'sub-arq-soft',
       title: 'Entrega de Diagrama de Microservicios',
       description: 'Documentar arquitectura hexagonal en formato PDF.',
@@ -424,10 +508,51 @@ export function getInitialActivities(): Activity[] {
       end_datetime: null,
       is_all_day: false,
       priority: 'medium',
+      is_shared: false,
       metadata: {},
       created_at: now.toISOString(),
       updated_at: now.toISOString(),
       subject: INITIAL_SUBJECTS[4],
+    },
+    // Actividad compartida en pareja
+    {
+      id: 'act-cita-pareja',
+      user_id: 'default-user',
+      profile_id: 'prof-luis',
+      subject_id: null,
+      title: '💖 Cita / Cena & Paseo juntos',
+      description: 'Salir a cenar y ver una película.',
+      type: 'personal',
+      status: 'pending',
+      start_datetime: coupleDate.toISOString(),
+      end_datetime: coupleDateEnd.toISOString(),
+      is_all_day: false,
+      priority: 'high',
+      is_shared: true,
+      metadata: { couple: true },
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      subject: null,
+    },
+    // Tarea de la pareja
+    {
+      id: 'act-novia-ux',
+      user_id: 'default-user',
+      profile_id: 'prof-novia',
+      subject_id: 'sub-novia-ux',
+      title: 'Entrega de Wireframes de App Móvil en Figma',
+      description: 'Subir enlace público del prototipo interactivo.',
+      type: 'task',
+      status: 'pending',
+      start_datetime: tomorrow.toISOString(),
+      end_datetime: null,
+      is_all_day: false,
+      priority: 'high',
+      is_shared: false,
+      metadata: {},
+      created_at: now.toISOString(),
+      updated_at: now.toISOString(),
+      subject: INITIAL_SUBJECTS[7],
     },
   ];
 }

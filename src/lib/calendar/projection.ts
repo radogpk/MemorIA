@@ -58,6 +58,7 @@ export function projectRecurrentClassesForRange(
         professor: rc.subject?.professor || null,
         isRecurrent: true,
         sourceRecurrentClass: rc,
+        profileId: rc.profile_id || rc.subject?.profile_id || null,
       });
     }
   }
@@ -142,6 +143,8 @@ export function formatActivitiesToCalendarEvents(
       sourceActivity: act,
       hasCollision: !!collision,
       collisionWith: collision?.collidedWithNames,
+      profileId: act.profile_id || null,
+      isShared: act.is_shared,
     };
   });
 }

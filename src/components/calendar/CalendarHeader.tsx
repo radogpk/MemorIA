@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Sparkles, Plus, Download, GraduationCap } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Sparkles, Plus, Download, GraduationCap, Users, Heart } from 'lucide-react';
 import { CalendarViewMode } from '@/lib/calendar/types';
+import { useMemoria } from '@/lib/storage/store';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -31,6 +32,7 @@ export function CalendarHeader({
   onExportIcs,
   onOpenStudyPlanner,
 }: Props) {
+  const { viewMode: duoMode, setViewMode: setDuoMode, activeProfile, partnerProfile } = useMemoria();
   const formattedDate = format(currentDate, "MMMM 'de' yyyy", { locale: es });
   const capitalizedDate = formattedDate.charAt(0).toUpperCase() + formattedDate.slice(1);
 
@@ -68,6 +70,54 @@ export function CalendarHeader({
 
       {/* View Switcher & Action buttons */}
       <div className="flex flex-wrap items-center gap-2">
+        {/* Duo View mode toggle */}
+        <div className="flex rounded-lg border border-slate-800 bg-slate-900/90 p-1 text-xs font-medium">
+          <button
+            onClick={() => setDuoMode('mine')}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition ${
+              duoMode === 'mine'
+                ? 'bg-blue-600 font-semibold text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title={`Ver solo horario de ${activeProfile.name}`}
+          >
+            <span
+              className="h-2 w-2 rounded-full inline-block"
+              style={{ backgroundColor: activeProfile.avatar_color }}
+            />
+            <span className="hidden sm:inline">{activeProfile.nickname || activeProfile.name}</span>
+            <span className="sm:hidden">Yo</span>
+          </button>
+
+          {partnerProfile && (
+            <button
+              onClick={() => setDuoMode('partner')}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition ${
+                duoMode === 'partner'
+                  ? 'bg-pink-600 font-semibold text-white shadow-sm'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+              title={`Ver horario de ${partnerProfile.name}`}
+            >
+              <Heart className="h-3 w-3 text-pink-300 fill-pink-300" />
+              <span className="hidden sm:inline">{partnerProfile.nickname || partnerProfile.name}</span>
+              <span className="sm:hidden">Ella</span>
+            </button>
+          )}
+
+          <button
+            onClick={() => setDuoMode('both')}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 transition ${
+              duoMode === 'both'
+                ? 'bg-purple-600 font-semibold text-white shadow-sm'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Ver ambos horarios superpuestos"
+          >
+            <Users className="h-3 w-3" />
+            <span>Ambos</span>
+          </button>
+        </div>
         {/* View mode toggle */}
         <div className="flex rounded-lg border border-slate-800 bg-slate-900/90 p-1 text-xs font-medium">
           {(['day', 'week', 'month'] as CalendarViewMode[]).map((mode) => {

@@ -30,7 +30,15 @@ import { Activity } from '@/types/database.types';
 import { AlertTriangle } from 'lucide-react';
 
 export default function CalendarPage() {
-  const { subjects, recurrentClasses, activities, toggleActivityStatus } = useMemoria();
+  const {
+    subjects,
+    recurrentClasses,
+    activities,
+    toggleActivityStatus,
+    viewMode: duoMode,
+    activeProfile,
+    partnerProfile,
+  } = useMemoria();
 
   const [currentDate, setCurrentDate] = useState<Date>(new Date());
   const [viewMode, setViewMode] = useState<CalendarViewMode>('week');
@@ -88,9 +96,23 @@ export default function CalendarPage() {
       if (selectedType && e.type !== selectedType) {
         return false;
       }
+
+      // Filter by Duo viewMode
+      if (duoMode === 'mine') {
+        const eventProfile = e.profileId || e.subject?.profile_id || 'prof-luis';
+        if (eventProfile !== activeProfile.id && !e.isShared) {
+          return false;
+        }
+      } else if (duoMode === 'partner' && partnerProfile) {
+        const eventProfile = e.profileId || e.subject?.profile_id || 'prof-luis';
+        if (eventProfile !== partnerProfile.id && !e.isShared) {
+          return false;
+        }
+      }
+
       return true;
     });
-  }, [projectedClasses, activities, collisions, selectedSubjectId, selectedType]);
+  }, [projectedClasses, activities, collisions, selectedSubjectId, selectedType, duoMode, activeProfile, partnerProfile]);
 
   // Collision count
   const collisionCount = Object.keys(collisions).length;

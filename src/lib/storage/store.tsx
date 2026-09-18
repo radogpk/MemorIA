@@ -1,7 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Subject, RecurrentClass, Activity, CreateSubjectInput, CreateActivityInput } from '@/types/database.types';
+import React, { createContext, useContext, useEffect, useState, useMemo } from 'react';
+import {
+  Subject,
+  RecurrentClass,
+  Activity,
+  CreateSubjectInput,
+  CreateActivityInput,
+  UserProfile,
+} from '@/types/database.types';
+import { DuoViewMode } from '@/lib/calendar/types';
+import {
+  DEFAULT_PROFILES,
+  fetchProfiles,
+  syncSubjectToSupabase,
+  deleteSubjectFromSupabase,
+  syncRecurrentClassToSupabase,
+  deleteRecurrentClassFromSupabase,
+  syncActivityToSupabase,
+  deleteActivityFromSupabase,
+} from '@/lib/supabase/data';
 import { INITIAL_SUBJECTS, INITIAL_RECURRENT_CLASSES, getInitialActivities } from './initial-data';
 
 interface MemoriaContextType {
@@ -9,7 +27,22 @@ interface MemoriaContextType {
   recurrentClasses: RecurrentClass[];
   activities: Activity[];
   isLoaded: boolean;
-  addSubject: (input: CreateSubjectInput, scheduleSlots?: Array<{ day_of_week: number; start_time: string; end_time: string; classroom?: string }>) => Subject;
+
+  // Duo / Multi-user profile management
+  profiles: UserProfile[];
+  activeProfile: UserProfile;
+  partnerProfile?: UserProfile;
+  viewMode: DuoViewMode; // 'mine' | 'partner' | 'both'
+  setActiveProfile: (profile: UserProfile) => void;
+  setViewMode: (mode: DuoViewMode) => void;
+  updateProfile: (id: string, updates: Partial<UserProfile>) => void;
+
+  // Data operations
+  addSubject: (
+    input: CreateSubjectInput,
+    scheduleSlots?: Array<{ day_of_week: number; start_time: string; end_time: string; classroom?: string }>,
+    profileId?: string
+  ) => Subject;
   updateSubject: (id: string, input: Partial<CreateSubjectInput>) => void;
   deleteSubject: (id: string) => void;
   addRecurrentClass: (classData: Omit<RecurrentClass, 'id' | 'user_id' | 'created_at'>) => void;
@@ -23,61 +56,140 @@ interface MemoriaContextType {
 const MemoriaContext = createContext<MemoriaContextType | null>(null);
 
 export function MemoriaProvider({ children }: { children: React.ReactNode }) {
+  const [profiles, setProfiles] = useState<UserProfile[]>(DEFAULT_PROFILES);
+  const [activeProfile, setActiveProfileState] = useState<UserProfile>(DEFAULT_PROFILES[0]);
+  const [viewMode, setViewModeState] = useState<DuoViewMode>('both');
+
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
   const [recurrentClasses, setRecurrentClasses] = useState<RecurrentClass[]>(INITIAL_RECURRENT_CLASSES);
   const [activities, setActivities] = useState<Activity[]>(getInitialActivities());
   const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage or initial seed
+  // Partner profile helper
+  const partnerProfile = useMemo(() => {
+    return profiles.find((p) => p.id !== activeProfile.id) || profiles[1];
+  }, [profiles, activeProfile]);
+
+  // Load from localStorage or defaults, and fetch Supabase profiles in background
   useEffect(() => {
     try {
-      const storedSubs = localStorage.getItem('memoria_v2_subjects');
-      const storedClasses = localStorage.getItem('memoria_v2_classes');
-      const storedActivities = localStorage.getItem('memoria_v2_activities');
+      // 1. Profiles & Active profile
+      const storedProfiles = localStorage.getItem('memoria_profiles');
+      const storedActiveId = localStorage.getItem('memoria_active_profile_id');
+      const storedViewMode = localStorage.getItem('memoria_duo_view_mode') as DuoViewMode | null;
+
+      let currentProfiles = DEFAULT_PROFILES;
+      if (storedProfiles) {
+        try {
+          const parsed = JSON.parse(storedProfiles);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            currentProfiles = parsed;
+          }
+        } catch {}
+      }
+      setProfiles(currentProfiles);
+
+      if (storedActiveId) {
+        const found = currentProfiles.find((p) => p.id === storedActiveId);
+        if (found) setActiveProfileState(found);
+        else setActiveProfileState(currentProfiles[0]);
+      } else {
+        setActiveProfileState(currentProfiles[0]);
+      }
+
+      if (storedViewMode && ['mine', 'partner', 'both'].includes(storedViewMode)) {
+        setViewModeState(storedViewMode);
+      }
+
+      // 2. Subjects, classes & activities
+      const storedSubs = localStorage.getItem('memoria_v3_subjects');
+      const storedClasses = localStorage.getItem('memoria_v3_classes');
+      const storedActivities = localStorage.getItem('memoria_v3_activities');
 
       if (storedSubs && storedClasses && storedActivities) {
         setSubjects(JSON.parse(storedSubs));
         setRecurrentClasses(JSON.parse(storedClasses));
         setActivities(JSON.parse(storedActivities));
       } else {
-        // Clean any old v1 keys
-        localStorage.removeItem('memoria_subjects');
-        localStorage.removeItem('memoria_classes');
-        localStorage.removeItem('memoria_activities');
-
         setSubjects(INITIAL_SUBJECTS);
         setRecurrentClasses(INITIAL_RECURRENT_CLASSES);
         setActivities(getInitialActivities());
       }
     } catch (e) {
-      console.warn('Could not read from localStorage, using memory defaults', e);
+      console.warn('Could not read from localStorage, using defaults', e);
       setSubjects(INITIAL_SUBJECTS);
       setRecurrentClasses(INITIAL_RECURRENT_CLASSES);
       setActivities(getInitialActivities());
     } finally {
       setIsLoaded(true);
     }
+
+    // Try background fetch of profiles from Supabase
+    fetchProfiles().then((remoteProfiles) => {
+      if (remoteProfiles && remoteProfiles.length > 0) {
+        setProfiles((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          remoteProfiles.forEach((rp) => map.set(rp.id, rp));
+          const merged = Array.from(map.values());
+          try {
+            localStorage.setItem('memoria_profiles', JSON.stringify(merged));
+          } catch {}
+          return merged;
+        });
+      }
+    });
   }, []);
 
   // Save to localStorage whenever state changes
   useEffect(() => {
     if (!isLoaded) return;
     try {
-      localStorage.setItem('memoria_v2_subjects', JSON.stringify(subjects));
-      localStorage.setItem('memoria_v2_classes', JSON.stringify(recurrentClasses));
-      localStorage.setItem('memoria_v2_activities', JSON.stringify(activities));
+      localStorage.setItem('memoria_profiles', JSON.stringify(profiles));
+      localStorage.setItem('memoria_active_profile_id', activeProfile.id);
+      localStorage.setItem('memoria_duo_view_mode', viewMode);
+      localStorage.setItem('memoria_v3_subjects', JSON.stringify(subjects));
+      localStorage.setItem('memoria_v3_classes', JSON.stringify(recurrentClasses));
+      localStorage.setItem('memoria_v3_activities', JSON.stringify(activities));
     } catch (e) {
       console.error('Error saving to localStorage', e);
     }
-  }, [subjects, recurrentClasses, activities, isLoaded]);
+  }, [profiles, activeProfile, viewMode, subjects, recurrentClasses, activities, isLoaded]);
+
+  const setActiveProfile = (profile: UserProfile) => {
+    setActiveProfileState(profile);
+    try {
+      localStorage.setItem('memoria_active_profile_id', profile.id);
+    } catch {}
+  };
+
+  const setViewMode = (mode: DuoViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem('memoria_duo_view_mode', mode);
+    } catch {}
+  };
+
+  const updateProfile = (id: string, updates: Partial<UserProfile>) => {
+    setProfiles((prev) => {
+      const updated = prev.map((p) => (p.id === id ? { ...p, ...updates } : p));
+      if (activeProfile.id === id) {
+        setActiveProfileState({ ...activeProfile, ...updates });
+      }
+      return updated;
+    });
+  };
 
   const addSubject = (
     input: CreateSubjectInput,
-    scheduleSlots: Array<{ day_of_week: number; start_time: string; end_time: string; classroom?: string }> = []
+    scheduleSlots: Array<{ day_of_week: number; start_time: string; end_time: string; classroom?: string }> = [],
+    profileId?: string
   ): Subject => {
+    const targetProfileId = profileId || input.profile_id || activeProfile.id;
+
     const newSub: Subject = {
       id: `sub-${Date.now()}`,
       user_id: 'default-user',
+      profile_id: targetProfileId,
       ...input,
       is_active: input.is_active ?? true,
       created_at: new Date().toISOString(),
@@ -85,19 +197,25 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     };
 
     setSubjects((prev) => [...prev, newSub]);
+    syncSubjectToSupabase(newSub);
 
     if (scheduleSlots.length > 0) {
-      const newClasses: RecurrentClass[] = scheduleSlots.map((slot, idx) => ({
-        id: `rec-${Date.now()}-${idx}`,
-        user_id: 'default-user',
-        subject_id: newSub.id,
-        day_of_week: slot.day_of_week,
-        start_time: slot.start_time,
-        end_time: slot.end_time,
-        classroom: slot.classroom || newSub.classroom || null,
-        created_at: new Date().toISOString(),
-        subject: newSub,
-      }));
+      const newClasses: RecurrentClass[] = scheduleSlots.map((slot, idx) => {
+        const rc: RecurrentClass = {
+          id: `rec-${Date.now()}-${idx}`,
+          user_id: 'default-user',
+          profile_id: targetProfileId,
+          subject_id: newSub.id,
+          day_of_week: slot.day_of_week,
+          start_time: slot.start_time,
+          end_time: slot.end_time,
+          classroom: slot.classroom || newSub.classroom || null,
+          created_at: new Date().toISOString(),
+          subject: newSub,
+        };
+        syncRecurrentClassToSupabase(rc);
+        return rc;
+      });
       setRecurrentClasses((prev) => [...prev, ...newClasses]);
     }
 
@@ -106,7 +224,12 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
 
   const updateSubject = (id: string, input: Partial<CreateSubjectInput>) => {
     setSubjects((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, ...input, updated_at: new Date().toISOString() } : s))
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        const updated = { ...s, ...input, updated_at: new Date().toISOString() };
+        syncSubjectToSupabase(updated);
+        return updated;
+      })
     );
   };
 
@@ -114,6 +237,7 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     setSubjects((prev) => prev.filter((s) => s.id !== id));
     setRecurrentClasses((prev) => prev.filter((c) => c.subject_id !== id));
     setActivities((prev) => prev.filter((a) => a.subject_id !== id));
+    deleteSubjectFromSupabase(id);
   };
 
   const addRecurrentClass = (classData: Omit<RecurrentClass, 'id' | 'user_id' | 'created_at'>) => {
@@ -121,15 +245,18 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     const newClass: RecurrentClass = {
       id: `rec-${Date.now()}`,
       user_id: 'default-user',
+      profile_id: classData.profile_id || subject?.profile_id || activeProfile.id,
       ...classData,
       created_at: new Date().toISOString(),
       subject,
     };
     setRecurrentClasses((prev) => [...prev, newClass]);
+    syncRecurrentClassToSupabase(newClass);
   };
 
   const deleteRecurrentClass = (id: string) => {
     setRecurrentClasses((prev) => prev.filter((c) => c.id !== id));
+    deleteRecurrentClassFromSupabase(id);
   };
 
   const addActivity = (input: CreateActivityInput): Activity => {
@@ -137,6 +264,8 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     const newActivity: Activity = {
       id: `act-${Date.now()}`,
       user_id: 'default-user',
+      profile_id: input.profile_id || activeProfile.id,
+      is_shared: input.is_shared ?? false,
       ...input,
       status: input.status || 'pending',
       metadata: input.metadata || {},
@@ -145,6 +274,7 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
       subject,
     };
     setActivities((prev) => [newActivity, ...prev]);
+    syncActivityToSupabase(newActivity);
     return newActivity;
   };
 
@@ -152,21 +282,27 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
     setActivities((prev) =>
       prev.map((a) => {
         if (a.id !== id) return a;
-        const subject = input.subject_id !== undefined
-          ? (input.subject_id ? subjects.find((s) => s.id === input.subject_id) : null)
-          : a.subject;
-        return {
+        const subject =
+          input.subject_id !== undefined
+            ? input.subject_id
+              ? subjects.find((s) => s.id === input.subject_id)
+              : null
+            : a.subject;
+        const updated: Activity = {
           ...a,
           ...input,
           subject,
           updated_at: new Date().toISOString(),
         };
+        syncActivityToSupabase(updated);
+        return updated;
       })
     );
   };
 
   const deleteActivity = (id: string) => {
     setActivities((prev) => prev.filter((a) => a.id !== id));
+    deleteActivityFromSupabase(id);
   };
 
   const toggleActivityStatus = (id: string) => {
@@ -174,7 +310,9 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
       prev.map((a) => {
         if (a.id !== id) return a;
         const nextStatus = a.status === 'completed' ? 'pending' : 'completed';
-        return { ...a, status: nextStatus, updated_at: new Date().toISOString() };
+        const updated: Activity = { ...a, status: nextStatus, updated_at: new Date().toISOString() };
+        syncActivityToSupabase(updated);
+        return updated;
       })
     );
   };
@@ -186,6 +324,13 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
         recurrentClasses,
         activities,
         isLoaded,
+        profiles,
+        activeProfile,
+        partnerProfile,
+        viewMode,
+        setActiveProfile,
+        setViewMode,
+        updateProfile,
         addSubject,
         updateSubject,
         deleteSubject,

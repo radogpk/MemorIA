@@ -9,7 +9,15 @@ import { Plus, Sparkles, Search, CheckSquare } from 'lucide-react';
 import { Activity } from '@/types/database.types';
 
 export default function TasksPage() {
-  const { activities, subjects, toggleActivityStatus, deleteActivity } = useMemoria();
+  const {
+    activities,
+    subjects,
+    toggleActivityStatus,
+    deleteActivity,
+    viewMode: duoMode,
+    activeProfile,
+    partnerProfile,
+  } = useMemoria();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
@@ -23,6 +31,15 @@ export default function TasksPage() {
   const filteredActivities = activities.filter((act) => {
     // Only show tasks and exams in the tasks board
     if (act.type !== 'task' && act.type !== 'exam') return false;
+
+    // Filter by Duo viewMode
+    if (duoMode === 'mine') {
+      const actProfile = act.profile_id || act.subject?.profile_id || 'prof-luis';
+      if (actProfile !== activeProfile.id && !act.is_shared) return false;
+    } else if (duoMode === 'partner' && partnerProfile) {
+      const actProfile = act.profile_id || act.subject?.profile_id || 'prof-luis';
+      if (actProfile !== partnerProfile.id && !act.is_shared) return false;
+    }
 
     if (selectedSubjectId && act.subject_id !== selectedSubjectId) {
       return false;

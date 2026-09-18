@@ -2,9 +2,19 @@ export type ActivityType = 'task' | 'exam' | 'meeting' | 'personal';
 export type ActivityStatus = 'pending' | 'in_progress' | 'completed' | 'cancelled';
 export type ActivityPriority = 'low' | 'medium' | 'high' | 'urgent';
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  nickname?: string | null;
+  avatar_color: string;
+  role: 'owner' | 'partner' | 'user';
+  created_at: string;
+}
+
 export interface Subject {
   id: string;
-  user_id: string;
+  user_id?: string;
+  profile_id?: string | null;
   name: string;
   code: string | null;
   color: string;
@@ -17,7 +27,8 @@ export interface Subject {
 
 export interface RecurrentClass {
   id: string;
-  user_id: string;
+  user_id?: string;
+  profile_id?: string | null;
   subject_id: string;
   day_of_week: number; // 1 = Lunes ... 7 = Domingo
   start_time: string;  // "HH:MM"
@@ -30,7 +41,8 @@ export interface RecurrentClass {
 
 export interface Activity {
   id: string;
-  user_id: string;
+  user_id?: string;
+  profile_id?: string | null;
   subject_id: string | null;
   title: string;
   description: string | null;
@@ -40,6 +52,7 @@ export interface Activity {
   end_datetime: string | null; // ISO 8601
   is_all_day: boolean;
   priority: ActivityPriority;
+  is_shared?: boolean; // Visible para ambos perfiles (citas, almuerzos juntos)
   metadata: Record<string, any>;
   created_at: string;
   updated_at: string;
@@ -48,11 +61,11 @@ export interface Activity {
 }
 
 // Input Types
-export type CreateSubjectInput = Omit<Subject, 'id' | 'user_id' | 'created_at' | 'updated_at'>;
+export type CreateSubjectInput = Omit<Subject, 'id' | 'created_at' | 'updated_at'>;
 export type UpdateSubjectInput = Partial<CreateSubjectInput>;
 
-export type CreateRecurrentClassInput = Omit<RecurrentClass, 'id' | 'user_id' | 'created_at' | 'subject'>;
+export type CreateRecurrentClassInput = Omit<RecurrentClass, 'id' | 'created_at' | 'subject'>;
 export type UpdateRecurrentClassInput = Partial<CreateRecurrentClassInput>;
 
-export type CreateActivityInput = Omit<Activity, 'id' | 'user_id' | 'created_at' | 'updated_at' | 'subject'>;
+export type CreateActivityInput = Omit<Activity, 'id' | 'created_at' | 'updated_at' | 'subject'>;
 export type UpdateActivityInput = Partial<CreateActivityInput>;
