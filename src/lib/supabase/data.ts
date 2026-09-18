@@ -98,3 +98,43 @@ export async function deleteActivityFromSupabase(id: string) {
     console.warn('Error deleting activity from Supabase:', err);
   }
 }
+
+export async function fetchSubjectsFromSupabase(): Promise<Subject[] | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase.from('subjects').select('*').order('created_at', { ascending: true });
+    if (error || !data || data.length === 0) return null;
+    return data as Subject[];
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchRecurrentClassesFromSupabase(): Promise<RecurrentClass[] | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('recurrent_classes')
+      .select('*, subject:subjects(*)')
+      .order('day_of_week', { ascending: true });
+    if (error || !data || data.length === 0) return null;
+    return data as RecurrentClass[];
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchActivitiesFromSupabase(): Promise<Activity[] | null> {
+  try {
+    const supabase = createClient();
+    const { data, error } = await supabase
+      .from('activities')
+      .select('*, subject:subjects(*)')
+      .order('start_datetime', { ascending: true });
+    if (error || !data || data.length === 0) return null;
+    return data as Activity[];
+  } catch {
+    return null;
+  }
+}
+

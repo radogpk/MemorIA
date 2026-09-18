@@ -13,6 +13,9 @@ import { DuoViewMode } from '@/lib/calendar/types';
 import {
   DEFAULT_PROFILES,
   fetchProfiles,
+  fetchSubjectsFromSupabase,
+  fetchRecurrentClassesFromSupabase,
+  fetchActivitiesFromSupabase,
   syncSubjectToSupabase,
   deleteSubjectFromSupabase,
   syncRecurrentClassToSupabase,
@@ -124,7 +127,7 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
       setIsLoaded(true);
     }
 
-    // Try background fetch of profiles from Supabase
+    // Try background fetch of profiles, subjects, classes and activities from Supabase
     fetchProfiles().then((remoteProfiles) => {
       if (remoteProfiles && remoteProfiles.length > 0) {
         setProfiles((prev) => {
@@ -137,6 +140,16 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
           return merged;
         });
       }
+    });
+
+    Promise.all([
+      fetchSubjectsFromSupabase(),
+      fetchRecurrentClassesFromSupabase(),
+      fetchActivitiesFromSupabase(),
+    ]).then(([remSubs, remClasses, remActs]) => {
+      if (remSubs && remSubs.length > 0) setSubjects(remSubs);
+      if (remClasses && remClasses.length > 0) setRecurrentClasses(remClasses);
+      if (remActs && remActs.length > 0) setActivities(remActs);
     });
   }, []);
 
