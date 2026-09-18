@@ -28,8 +28,8 @@ export function SubjectCard({ subject, classes, onEdit, onDelete }: Props) {
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-2.5">
             <span
-              className="h-3.5 w-3.5 rounded-full ring-2 ring-offset-2 ring-offset-[#0d1320]"
-              style={{ backgroundColor: subject.color, ringColor: subject.color }}
+              className="h-3.5 w-3.5 rounded-full ring-offset-2 ring-offset-[#0d1320]"
+              style={{ backgroundColor: subject.color, boxShadow: `0 0 0 2px ${subject.color}` }}
             />
             <div>
               <h3 className="font-semibold text-white group-hover:text-blue-300 transition">
