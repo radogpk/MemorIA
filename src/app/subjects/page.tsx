@@ -20,7 +20,7 @@ export default function SubjectsPage() {
     activeProfile,
     partnerProfile,
   } = useMemoria();
-  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(activeProfile.id);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingSubject, setEditingSubject] = useState<Subject | null>(null);
 

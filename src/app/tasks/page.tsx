@@ -123,7 +123,14 @@ export default function TasksPage() {
           >
             Todas
           </button>
-          {subjects.map((s) => {
+          {subjects
+            .filter((s) => {
+              // Show subjects for active profile, or partner profile if in partner/both mode
+              if (duoMode === 'mine') return (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id;
+              if (duoMode === 'partner' && partnerProfile) return (s.profile_id || GERARDO_PROFILE_ID) === partnerProfile.id;
+              return true; // 'both' mode: show all subjects
+            })
+            .map((s) => {
             const isSelected = selectedSubjectId === s.id;
             return (
               <button

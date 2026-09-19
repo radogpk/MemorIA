@@ -61,7 +61,7 @@ const MemoriaContext = createContext<MemoriaContextType | null>(null);
 export function MemoriaProvider({ children }: { children: React.ReactNode }) {
   const [profiles, setProfiles] = useState<UserProfile[]>(DEFAULT_PROFILES);
   const [activeProfile, setActiveProfileState] = useState<UserProfile>(DEFAULT_PROFILES[0]);
-  const [viewMode, setViewModeState] = useState<DuoViewMode>('both');
+  const [viewMode, setViewModeState] = useState<DuoViewMode>('mine');
 
   const [subjects, setSubjects] = useState<Subject[]>(INITIAL_SUBJECTS);
   const [recurrentClasses, setRecurrentClasses] = useState<RecurrentClass[]>(INITIAL_RECURRENT_CLASSES);
@@ -114,9 +114,35 @@ export function MemoriaProvider({ children }: { children: React.ReactNode }) {
       const storedActivities = localStorage.getItem('memoria_v3_activities');
 
       if (storedSubs && storedClasses && storedActivities) {
-        setSubjects(JSON.parse(storedSubs));
-        setRecurrentClasses(JSON.parse(storedClasses));
-        setActivities(JSON.parse(storedActivities));
+        try {
+          const parsedSubs: Subject[] = JSON.parse(storedSubs);
+          const parsedClasses: RecurrentClass[] = JSON.parse(storedClasses);
+          const parsedActs: Activity[] = JSON.parse(storedActivities);
+
+          // Check if classes have profile_id — if not, they're from old cache without fix.
+          // Force refresh from defaults/Supabase.
+          const classesNeedMigration = parsedClasses.some(
+            (c) => !c.profile_id
+          );
+
+          if (classesNeedMigration) {
+            // Clear old cache and use corrected initial data
+            localStorage.removeItem('memoria_v3_subjects');
+            localStorage.removeItem('memoria_v3_classes');
+            localStorage.removeItem('memoria_v3_activities');
+            setSubjects(INITIAL_SUBJECTS);
+            setRecurrentClasses(INITIAL_RECURRENT_CLASSES);
+            setActivities(getInitialActivities());
+          } else {
+            setSubjects(parsedSubs);
+            setRecurrentClasses(parsedClasses);
+            setActivities(parsedActs);
+          }
+        } catch {
+          setSubjects(INITIAL_SUBJECTS);
+          setRecurrentClasses(INITIAL_RECURRENT_CLASSES);
+          setActivities(getInitialActivities());
+        }
       } else {
         setSubjects(INITIAL_SUBJECTS);
         setRecurrentClasses(INITIAL_RECURRENT_CLASSES);

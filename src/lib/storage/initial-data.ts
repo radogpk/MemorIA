@@ -128,6 +128,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-inn-lun',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-innovacion',
     day_of_week: 1,
     start_time: '07:00',
@@ -140,6 +141,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-inn-vie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-innovacion',
     day_of_week: 5,
     start_time: '18:00',
@@ -154,6 +156,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-disc-mie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-discreta',
     day_of_week: 3,
     start_time: '07:00',
@@ -166,6 +169,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-disc-jue',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-discreta',
     day_of_week: 4,
     start_time: '09:00',
@@ -180,6 +184,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-est-jue',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-estadistica',
     day_of_week: 4,
     start_time: '07:00',
@@ -192,6 +197,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-est-mie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-estadistica',
     day_of_week: 3,
     start_time: '11:00',
@@ -204,6 +210,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-est-vie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-estadistica',
     day_of_week: 5,
     start_time: '14:00',
@@ -218,6 +225,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-ia-vie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-ia',
     day_of_week: 5,
     start_time: '07:00',
@@ -230,6 +238,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-ia-mar',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-ia',
     day_of_week: 2,
     start_time: '16:00',
@@ -242,6 +251,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-ia-jue',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-ia',
     day_of_week: 4,
     start_time: '17:00',
@@ -256,6 +266,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-arq-sab',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-arq-soft',
     day_of_week: 6,
     start_time: '09:00',
@@ -268,6 +279,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-arq-vie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-arq-soft',
     day_of_week: 5,
     start_time: '16:00',
@@ -280,6 +292,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-arq-mar',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-arq-soft',
     day_of_week: 2,
     start_time: '18:00',
@@ -294,6 +307,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-so-lun',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-sist-oper',
     day_of_week: 1,
     start_time: '14:00',
@@ -306,6 +320,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-so-mie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-sist-oper',
     day_of_week: 3,
     start_time: '14:00',
@@ -318,6 +333,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-so-jue',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-sist-oper',
     day_of_week: 4,
     start_time: '18:00',
@@ -332,6 +348,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-lun-1',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 1,
     start_time: '09:30',
@@ -344,6 +361,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-lun-2',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 1,
     start_time: '15:30',
@@ -356,6 +374,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-mar-1',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 2,
     start_time: '08:00',
@@ -368,6 +387,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-mar-2',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 2,
     start_time: '14:00',
@@ -380,6 +400,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-jue',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 4,
     start_time: '10:30',
@@ -392,6 +413,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-vie',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 5,
     start_time: '09:30',
@@ -404,6 +426,7 @@ export const INITIAL_RECURRENT_CLASSES: RecurrentClass[] = [
   {
     id: 'rec-trab-sab',
     user_id: 'default-user',
+    profile_id: GERARDO_PROFILE_ID,
     subject_id: 'sub-trabajo',
     day_of_week: 6,
     start_time: '11:30',

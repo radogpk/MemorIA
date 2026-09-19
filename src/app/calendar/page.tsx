@@ -78,10 +78,16 @@ export default function CalendarPage() {
     return projectRecurrentClassesForRange(recurrentClasses, rangeStart, rangeEnd);
   }, [recurrentClasses, rangeStart, rangeEnd]);
 
-  // Detect collisions
+  // Detect collisions — only for relevant profile's activities
   const collisions = useMemo(() => {
-    return detectCollisions(activities, projectedClasses);
-  }, [activities, projectedClasses]);
+    const relevantActivities = activities.filter((a) => {
+      const actProfile = a.profile_id || a.subject?.profile_id || GERARDO_PROFILE_ID;
+      if (duoMode === 'mine') return actProfile === activeProfile.id || a.is_shared;
+      if (duoMode === 'partner' && partnerProfile) return actProfile === partnerProfile.id || a.is_shared;
+      return true; // 'both'
+    });
+    return detectCollisions(relevantActivities, projectedClasses);
+  }, [activities, projectedClasses, duoMode, activeProfile, partnerProfile]);
 
   // Combine projected classes and activities into calendar events
   const allEvents: CalendarEvent[] = useMemo(() => {
@@ -174,7 +180,11 @@ export default function CalendarPage() {
 
       {/* Filter Bar */}
       <CalendarFilterBar
-        subjects={subjects}
+        subjects={subjects.filter((s) => {
+          if (duoMode === 'mine') return (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id;
+          if (duoMode === 'partner' && partnerProfile) return (s.profile_id || GERARDO_PROFILE_ID) === partnerProfile.id;
+          return true; // 'both': show all
+        })}
         selectedSubjectId={selectedSubjectId}
         onSelectSubject={setSelectedSubjectId}
         selectedType={selectedType}

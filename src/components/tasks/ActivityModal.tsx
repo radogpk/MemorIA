@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Calendar, Clock, Tag, AlertCircle, Trash2, CheckCircle } from 'lucide-react';
 import { Activity, ActivityType, ActivityPriority, ActivityStatus, CreateActivityInput } from '@/types/database.types';
 import { useMemoria } from '@/lib/storage/store';
+import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
 import { format } from 'date-fns';
 
 interface Props {
@@ -213,10 +214,13 @@ export function ActivityModal({
               {profiles.map((p) => {
                 const isSelected = profileId === p.id;
                 return (
-                  <button
+                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => setProfileId(p.id)}
+                    onClick={() => {
+                      setProfileId(p.id);
+                      setSubjectId(''); // Reset subject when owner changes
+                    }}
                     className={`flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-medium transition ${
                       isSelected
                         ? 'bg-blue-600 text-white shadow-sm'
@@ -260,11 +264,13 @@ export function ActivityModal({
               className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-slate-200 focus:border-blue-500 focus:outline-none"
             >
               <option value="">Ninguna / Personal</option>
-              {subjects.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.name} {s.code ? `(${s.code})` : ''}
-                </option>
-              ))}
+              {subjects
+                .filter((s) => !profileId || (s.profile_id || GERARDO_PROFILE_ID) === profileId)
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name} {s.code ? `(${s.code})` : ''}
+                  </option>
+                ))}
             </select>
           </div>
 

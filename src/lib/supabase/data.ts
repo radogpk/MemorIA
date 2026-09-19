@@ -51,7 +51,13 @@ export async function createProfile(profile: Omit<UserProfile, 'id' | 'created_a
 export async function syncSubjectToSupabase(subject: Subject) {
   try {
     const supabase = createClient();
-    await supabase.from('subjects').upsert(subject);
+    // Only send flat columns, never nested joins
+    const { created_at, updated_at, ...rest } = subject as any;
+    await supabase.from('subjects').upsert({
+      ...rest,
+      created_at,
+      updated_at,
+    });
   } catch (err) {
     console.warn('Error syncing subject to Supabase:', err);
   }
@@ -69,7 +75,9 @@ export async function deleteSubjectFromSupabase(id: string) {
 export async function syncRecurrentClassToSupabase(recurrentClass: RecurrentClass) {
   try {
     const supabase = createClient();
-    await supabase.from('recurrent_classes').upsert(recurrentClass);
+    // Strip nested subject object — only flat DB columns
+    const { subject: _subject, ...flatClass } = recurrentClass;
+    await supabase.from('recurrent_classes').upsert(flatClass);
   } catch (err) {
     console.warn('Error syncing recurrent class to Supabase:', err);
   }
@@ -87,7 +95,9 @@ export async function deleteRecurrentClassFromSupabase(id: string) {
 export async function syncActivityToSupabase(activity: Activity) {
   try {
     const supabase = createClient();
-    await supabase.from('activities').upsert(activity);
+    // Strip nested subject object — only flat DB columns
+    const { subject: _subject, ...flatActivity } = activity;
+    await supabase.from('activities').upsert(flatActivity);
   } catch (err) {
     console.warn('Error syncing activity to Supabase:', err);
   }
