@@ -68,7 +68,7 @@ export const entitySchemas = {
     is_active: z.boolean(),
     updated_at: timestamp,
     term: term.nullable().optional(),
-    holiday_policy: z.enum(["inherit", "skip", "attend"]).optional(),
+    holiday_policy: z.enum(["inherit", "skip", "attend"]).default("inherit"),
   }),
   recurrentClasses: z
     .object({

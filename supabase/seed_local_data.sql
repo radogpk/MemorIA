@@ -3,30 +3,35 @@
 -- ==============================================================================
 BEGIN;
 
+-- Asegurar compatibilidad en la columna holiday_policy
+ALTER TABLE public.subjects ALTER COLUMN holiday_policy DROP NOT NULL;
+ALTER TABLE public.subjects ALTER COLUMN holiday_policy SET DEFAULT 'inherit';
+UPDATE public.subjects SET holiday_policy = 'inherit' WHERE holiday_policy IS NULL;
+
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('eca47b4c-1390-4f84-801d-d3c59b08b205', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Innovación', 'INN-101', '#f59e0b', 'Profesor de Innovación', 'H-203', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('bf31990d-22a7-4db2-8ce6-06ea809d2c85', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Matemática Discreta', 'DISC-102', '#ec4899', 'Profesor de Discreta', 'H-202', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('cb10dd1e-e143-4a6a-8fcf-6963dcc712a1', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Estadística y Probabilidades', 'EST-201', '#eab308', 'Plaza a Contratar', 'H-202', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('451c03f2-da2e-4920-8c8a-390f83c24901', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Inteligencia Artificial', 'IA-301', '#8b5cf6', 'Profesor de IA', 'H-205', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('15848c43-f024-4442-836b-9544275e4bf9', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Arquitectura de Software', 'ARQ-302', '#10b981', 'Profesor de Arquitectura', 'H-205', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T04:45:44.829Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('2b233d6e-61a6-41d6-8302-33cbff33dc55', '727db856-313b-4c91-91e4-7fac976dfc6d', 'Sistemas Operativos', 'SO-203', '#06b6d4', 'Profesor de Sistemas Operativos', 'H-203', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('7682595f-edab-4d5e-8cda-9d208a55f2c1', '1e12d23b-f0b2-49d4-ae4b-b602226c7d14', 'Diseño UX/UI & Prototipado', 'UX-101', '#ec4899', 'Docente UX', 'Lab Creativo 3', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 INSERT INTO public.subjects (id, profile_id, name, code, color, professor, classroom, is_active, term, holiday_policy, created_at, updated_at)
 VALUES ('81213890-da20-44e2-80c6-13d5459f03f9', '1e12d23b-f0b2-49d4-ae4b-b602226c7d14', 'Marketing Digital & Métricas', 'MKT-202', '#f43f5e', 'Docente Marketing', 'A-104', true, NULL, 'inherit', '2026-10-23T03:53:50.139Z', '2026-10-23T03:53:50.139Z')
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color;
+ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name, color = EXCLUDED.color, holiday_policy = 'inherit';
 
 INSERT INTO public.recurrent_classes (id, profile_id, subject_id, day_of_week, start_time, end_time, classroom, professor, session_type, exceptions, created_at)
 VALUES ('18910b2f-796d-431a-85a0-97aaabad99ed', '727db856-313b-4c91-91e4-7fac976dfc6d', 'eca47b4c-1390-4f84-801d-d3c59b08b205', 1, '07:00', '09:00', 'Teoría / H-203', NULL, 'theory', '[]'::jsonb, '2026-10-23T03:53:50.139Z')

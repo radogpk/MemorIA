@@ -72,6 +72,7 @@ export function normalizeSnapshot(input: Snapshot): Snapshot {
     id: stableUuid(s.id),
     user_id: undefined,
     profile_id: profileId(s.profile_id) || GERARDO_PROFILE_ID,
+    holiday_policy: s.holiday_policy || "inherit",
   }));
   const subjectMap = new Map(subjects.map((s) => [s.id, s]));
   const recurrentClasses = (input.recurrentClasses || []).map((c) => {
