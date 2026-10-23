@@ -40,6 +40,7 @@ next-env.d.ts
 .env*
 !.env.example
 /data/
+memoria-backup*.json
 /.impeccable/
 /.taste-skill/
 /.taste-skill/inspect/
