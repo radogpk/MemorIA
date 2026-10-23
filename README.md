@@ -32,7 +32,10 @@ Para usar dos dispositivos con el mismo servidor, abre en ambos la dirección de
 
 ## Supabase y despliegue
 
-El proyecto configurado durante la revisión no resolvía por DNS. La nube no se pudo verificar. Para rehabilitarla, configura un proyecto accesible y aplica:
+En Supabase, abre **SQL Editor** y ejecuta el contenido completo de cada archivo. Usa una de estas dos rutas de instalación:
+
+- Instalador único: `supabase/setup_complete.sql`. Se genera desde las mismas migraciones que se prueban en PostgreSQL; no incluye cursos ni actividades de ejemplo.
+- Archivos individuales: sigue el orden indicado abajo. Para una base existente conserva las tablas y sus registros.
 
 1. En un proyecto nuevo: `supabase/schema.sql` y luego `supabase/migrations/20261022_reliable_storage.sql`.
 2. En el proyecto existente: solo la migración. No borres las tablas.
@@ -40,6 +43,12 @@ El proyecto configurado durante la revisión no resolvía por DNS. La nube no se
 Aplica después `supabase/migrations/20261023_norely_profile.sql` para corregir nombre y apodo conservando el mismo perfil.
 
 Después aplica `supabase/migrations/20261023_planning_upgrades.sql`: añade semestres, feriados, cambios puntuales, contrapropuestas y restauración sin sobrescritura. La RPC comprueba versiones y cruces con traslado dentro de la transacción.
+
+Por último aplica `supabase/migrations/20261023_push_notifications.sql` para crear el almacenamiento de dispositivos y entregas. Las claves push y el programador se configuran aparte.
+
+Si ya ejecutaste una versión anterior de `setup_complete.sql` y al guardar aparece `null value in column "holiday_policy"`, ejecuta de nuevo **solo** `supabase/migrations/20261023_planning_upgrades.sql`. Esto reemplaza la función de guardado incompatible y añade los valores predeterminados sin borrar registros. Después pulsa **Reintentar** en la app para enviar la cola que conserva el navegador. No necesitas volver a cargar cursos ni ejecutar `seed_local_data.sql` para esta reparación.
+
+Al cambiar una migración, ejecuta `npm run db:setup` y versiona también el instalador generado. La prueba `supabase-setup.test.ts` comprueba que no diverjan.
 
 Variables del servidor:
 

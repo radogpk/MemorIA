@@ -81,25 +81,64 @@ describe.skipIf(!port)("PostgreSQL planning migration and transaction", () => {
     run(
       "DO $$ BEGIN CREATE ROLE anon; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE authenticated; EXCEPTION WHEN duplicate_object THEN NULL; END $$; DO $$ BEGIN CREATE ROLE service_role; EXCEPTION WHEN duplicate_object THEN NULL; END $$;",
     );
-    for (const file of [
-      "supabase/schema.sql",
-      "supabase/migrations/20261022_reliable_storage.sql",
-      "supabase/migrations/20261023_norely_profile.sql",
-      "supabase/migrations/20261023_planning_upgrades.sql",
-    ])
+    const files = process.env.MEMORIA_TEST_SETUP === "consolidated"
+      ? ["supabase/setup_complete.sql"]
+      : [
+          "supabase/schema.sql",
+          "supabase/migrations/20261022_reliable_storage.sql",
+          "supabase/migrations/20261023_norely_profile.sql",
+          "supabase/migrations/20261023_planning_upgrades.sql",
+        ];
+    for (const file of files)
       run(readFileSync(file, "utf8"));
-    // Reapplying the feature migration must preserve all rows and definitions.
-    run(
-      readFileSync(
-        "supabase/migrations/20261023_planning_upgrades.sql",
-        "utf8",
-      ),
-    );
+    // Reapplying either installation path must preserve rows and definitions.
+    run(readFileSync(files[files.length - 1], "utf8"));
     // Only this fixed disposable database on the explicitly opted-in local port.
     run(
       "TRUNCATE activities,recurrent_classes,subjects,memoria_batches CASCADE;",
     );
   }, 60000);
+  it("saves a legacy course and session with defaults, then updates and deletes them", () => {
+    const course = crypto.randomUUID(), session = crypto.randomUUID();
+    const record = {
+      id: course, profile_id: G, name: "Legacy synced course", code: null,
+      professor: null, classroom: null, color: "#97c7e7", is_active: true,
+      created_at: now, updated_at: now,
+    };
+    const subjectMutation = {
+      id: crypto.randomUUID(), table: "subjects", action: "upsert", record,
+    };
+    const request = {
+      id: crypto.randomUUID(), actor: G, mutations: [
+        subjectMutation,
+        {
+          id: crypto.randomUUID(), table: "recurrentClasses", action: "upsert",
+          record: {
+            id: session, profile_id: G, subject_id: course, day_of_week: 1,
+            start_time: "08:00", end_time: "09:00", classroom: null, created_at: now,
+          },
+        },
+      ],
+    };
+    const saved = send(request);
+    expect(saved.subjects.find((s: { id: string }) => s.id === course).holiday_policy).toBe("inherit");
+    expect(saved.recurrentClasses.find((s: { id: string }) => s.id === session)).toMatchObject({
+      session_type: "theory", exceptions: [], profile_id: G, subject_id: course,
+    });
+    // Retrying a failed browser synchronization must not duplicate any record.
+    expect(send(request)).toEqual(saved);
+    const edited = send({
+      id: crypto.randomUUID(), actor: G,
+      mutations: [{ ...subjectMutation, record: { ...record, name: "Updated course", holiday_policy: "attend" } }],
+    });
+    expect(edited.subjects.find((s: { id: string }) => s.id === course)).toMatchObject({ name: "Updated course", holiday_policy: "attend" });
+    const removed = send({
+      id: crypto.randomUUID(), actor: G,
+      mutations: [{ id: crypto.randomUUID(), table: "subjects", action: "delete", record: { id: course } }],
+    });
+    expect(removed.subjects.some((s: { id: string }) => s.id === course)).toBe(false);
+    expect(removed.recurrentClasses.some((s: { id: string }) => s.id === session)).toBe(false);
+  });
   it("persists counterproposals with the same ID and lets the original owner confirm", () => {
     const a = activity();
     send(batch(a));

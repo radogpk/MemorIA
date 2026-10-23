@@ -1,4 +1,5 @@
 -- Push notification devices and delivery queue
+BEGIN;
 CREATE TABLE IF NOT EXISTS public.memoria_push_devices (
   id text PRIMARY KEY,
   profile_id uuid NOT NULL REFERENCES public.user_profiles(id) ON DELETE CASCADE,
@@ -81,7 +82,10 @@ BEGIN
 END;
 $$;
 
+REVOKE ALL ON TABLE public.memoria_push_devices,public.memoria_push_deliveries FROM anon,authenticated;
+REVOKE ALL ON FUNCTION public.memoria_register_push(jsonb),public.memoria_claim_push() FROM PUBLIC,anon,authenticated;
 GRANT ALL ON TABLE public.memoria_push_devices TO service_role;
 GRANT ALL ON TABLE public.memoria_push_deliveries TO service_role;
 GRANT EXECUTE ON FUNCTION public.memoria_register_push(jsonb) TO service_role;
 GRANT EXECUTE ON FUNCTION public.memoria_claim_push() TO service_role;
+COMMIT;

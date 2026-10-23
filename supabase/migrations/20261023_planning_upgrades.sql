@@ -1,5 +1,7 @@
 -- Apply after 20261022_reliable_storage.sql and 20261023_norely_profile.sql.
 -- Adds fields without deleting or replacing existing records.
+-- Reapply this file to repair the incompatible memoria_apply_batch function
+-- installed by older versions of setup_complete.sql. Pending batches can retry.
 BEGIN;
 ALTER TABLE public.user_profiles ADD COLUMN IF NOT EXISTS schedule jsonb;
 UPDATE public.user_profiles SET schedule=jsonb_build_object('holiday_policy',CASE WHEN id='727db856-313b-4c91-91e4-7fac976dfc6d' THEN 'skip' ELSE 'attend' END,'holidays','[]'::jsonb,'travel_minutes',0) WHERE schedule IS NULL;
@@ -116,7 +118,7 @@ BEGIN
          r:=r||jsonb_build_object('holiday_policy',COALESCE(r->>'holiday_policy','inherit'));
          INSERT INTO subjects SELECT * FROM jsonb_populate_record(NULL::subjects,r) ON CONFLICT(id) DO UPDATE SET profile_id=excluded.profile_id,name=excluded.name,code=excluded.code,color=excluded.color,professor=excluded.professor,classroom=excluded.classroom,is_active=excluded.is_active,updated_at=excluded.updated_at,term=excluded.term,holiday_policy=excluded.holiday_policy;
        WHEN 'recurrentClasses' THEN
-         r:=r||jsonb_build_object('exceptions',COALESCE(r->'exceptions','[]'::jsonb));
+         r:=r||jsonb_build_object('session_type',COALESCE(r->>'session_type','theory'),'exceptions',COALESCE(NULLIF(r->'exceptions','null'::jsonb),'[]'::jsonb));
          INSERT INTO recurrent_classes SELECT * FROM jsonb_populate_record(NULL::recurrent_classes,r) ON CONFLICT(id) DO UPDATE SET profile_id=excluded.profile_id,subject_id=excluded.subject_id,day_of_week=excluded.day_of_week,start_time=excluded.start_time,end_time=excluded.end_time,classroom=excluded.classroom,professor=excluded.professor,session_type=excluded.session_type,exceptions=excluded.exceptions;
        WHEN 'activities' THEN
          INSERT INTO activities SELECT * FROM jsonb_populate_record(NULL::activities,r) ON CONFLICT(id) DO UPDATE SET profile_id=excluded.profile_id,subject_id=excluded.subject_id,title=excluded.title,description=excluded.description,type=excluded.type,status=excluded.status,start_datetime=excluded.start_datetime,end_datetime=excluded.end_datetime,is_all_day=excluded.is_all_day,priority=excluded.priority,is_shared=excluded.is_shared,invitation=excluded.invitation,metadata=excluded.metadata,updated_at=excluded.updated_at;
