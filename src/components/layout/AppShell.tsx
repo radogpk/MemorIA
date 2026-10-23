@@ -40,8 +40,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 key={profile.id}
                 className="profile-choice"
                 onClick={() => {
-              router.replace(path === "/together" ? "/together" : "/today");
+                  const destination = path === "/together" ? "/together" : "/today";
                   setActiveProfile(profile);
+                  if (path !== destination) router.replace(destination);
                 }}
               >
                 <span

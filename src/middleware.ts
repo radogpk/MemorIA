@@ -1,7 +1,12 @@
-import { type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { updateSession } from '@/lib/supabase/middleware';
 
 export async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname === '/') {
+    const destination = request.nextUrl.clone();
+    destination.pathname = '/today';
+    return NextResponse.redirect(destination);
+  }
   return await updateSession(request);
 }
 
