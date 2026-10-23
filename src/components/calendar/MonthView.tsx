@@ -1,6 +1,6 @@
-'use client';
+"use client";
 
-import React from 'react';
+import React from "react";
 import {
   startOfMonth,
   endOfMonth,
@@ -11,9 +11,9 @@ import {
   isSameMonth,
   isSameDay,
   isToday,
-} from 'date-fns';
-import { es } from 'date-fns/locale';
-import { CalendarEvent } from '@/lib/calendar/types';
+} from "date-fns";
+import { es } from "date-fns/locale";
+import { CalendarEvent } from "@/lib/calendar/types";
 
 interface Props {
   currentDate: Date;
@@ -22,7 +22,7 @@ interface Props {
   onSelectEvent: (event: CalendarEvent) => void;
 }
 
-const WEEKDAYS = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+const WEEKDAYS = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
 
 export function MonthView({
   currentDate,
@@ -58,23 +58,23 @@ export function MonthView({
               key={day.toISOString()}
               onClick={() => onSelectDate(day)}
               className={`min-h-[90px] border-b border-r border-slate-800/60 p-1.5 transition cursor-pointer hover:bg-slate-800/30 flex flex-col ${
-                !isCurrentMonth ? 'opacity-30 bg-[#080b12]' : ''
-              } ${isCurrentDay ? 'bg-blue-950/20' : ''}`}
+                !isCurrentMonth ? "opacity-30 bg-[#080b12]" : ""
+              } ${isCurrentDay ? "bg-blue-950/20" : ""}`}
             >
               <div className="flex items-center justify-between">
                 <span
                   className={`flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
                     isCurrentDay
-                      ? 'bg-blue-600 text-white shadow-sm'
-                      : 'text-slate-300'
+                      ? "bg-blue-600 text-white shadow-sm"
+                      : "text-slate-300"
                   }`}
                 >
-                  {format(day, 'd')}
+                  {format(day, "d")}
                 </span>
 
                 {dayEvents.length > 0 && (
                   <span className="text-[10px] text-slate-500 font-medium">
-                    {dayEvents.length} {dayEvents.length === 1 ? 'act' : 'acts'}
+                    {dayEvents.length} {dayEvents.length === 1 ? "act" : "acts"}
                   </span>
                 )}
               </div>
@@ -82,7 +82,7 @@ export function MonthView({
               {/* Event chips */}
               <div className="mt-1 space-y-1 overflow-y-auto max-h-[80px]">
                 {dayEvents.slice(0, 3).map((event) => {
-                  const subjectColor = event.subject?.color || '#3b82f6';
+                  const subjectColor = event.subject?.color || "#3b82f6";
                   return (
                     <div
                       key={event.id}
@@ -93,15 +93,15 @@ export function MonthView({
                       className="truncate rounded px-1 py-0.5 text-[10px] font-medium leading-tight text-white transition hover:brightness-125"
                       style={{
                         backgroundColor:
-                          event.type === 'exam'
-                            ? '#ef4444'
-                            : event.type === 'task'
-                            ? '#d97706'
-                            : subjectColor,
+                          event.type === "exam"
+                            ? "#ef4444"
+                            : event.type === "task"
+                              ? "#d97706"
+                              : subjectColor,
                       }}
-                      title={`${event.title} (${format(event.start, 'HH:mm')})`}
+                      title={`${event.title} (${format(event.start, "HH:mm")})`}
                     >
-                      {format(event.start, 'HH:mm')} {event.title}
+                      {format(event.start, "HH:mm")} {event.title}
                     </div>
                   );
                 })}

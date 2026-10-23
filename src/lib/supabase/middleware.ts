@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function updateSession(request: NextRequest) {
+  if (!process.env.MEMORIA_USE_AUTH) return NextResponse.next({ request });
   let supabaseResponse = NextResponse.next({
     request,
   });

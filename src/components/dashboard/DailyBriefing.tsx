@@ -1,360 +1,299 @@
-'use client';
-
-import React, { useMemo } from 'react';
-import { useMemoria } from '@/lib/storage/store';
-import { projectRecurrentClassesForRange, formatActivitiesToCalendarEvents } from '@/lib/calendar/projection';
-import { calculateDailyStatus } from '@/lib/calendar/daily-status';
-import { startOfDay, endOfDay, format, differenceInDays } from 'date-fns';
-import { es } from 'date-fns/locale';
+"use client";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import {
-  Clock,
+  Plus,
   MapPin,
-  CheckCircle2,
-  Calendar,
-  AlertCircle,
-  GraduationCap,
-  Sparkles,
-  ArrowRight,
-  Utensils,
+  ArrowUpRight,
   Check,
-} from 'lucide-react';
-import Link from 'next/link';
-
-import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
-
-interface Props {
+  CalendarDays,
+  BookOpen,
+} from "lucide-react";
+import { useMemoria } from "@/lib/storage/store";
+import {
+  projectRecurrentClassesForRange,
+  formatActivitiesToCalendarEvents,
+} from "@/lib/calendar/projection";
+import { isVisibleActivity } from "@/lib/storage/model";
+import {
+  startOfDay,
+  endOfDay,
+  format,
+  isSameDay,
+  differenceInCalendarDays,
+} from "date-fns";
+import { es } from "date-fns/locale";
+import { ActivityModal } from "@/components/tasks/ActivityModal";
+import { InvitationList } from "@/components/invitations/InvitationList";
+export function DailyBriefing({
+  onOpenPlanner,
+}: {
   onOpenQuickAdd: () => void;
   onOpenPlanner: () => void;
-}
-
-export function DailyBriefing({ onOpenQuickAdd, onOpenPlanner }: Props) {
-  const { subjects, recurrentClasses, activities, toggleActivityStatus, activeProfile } = useMemoria();
-
-  const now = new Date();
-  const dayStart = startOfDay(now);
-  const dayEnd = endOfDay(now);
-
-  // Filter individual data strictly for the active person
-  const userSubjects = useMemo(() => {
-    return subjects.filter((s) => (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id);
-  }, [subjects, activeProfile]);
-
-  const userClasses = useMemo(() => {
-    return recurrentClasses.filter(
-      (c) => (c.profile_id || c.subject?.profile_id || GERARDO_PROFILE_ID) === activeProfile.id
+}) {
+  const {
+    profiles,
+    subjects,
+    recurrentClasses,
+    activities,
+    activeProfile,
+    toggleActivityStatus,
+    isLoaded,
+  } = useMemoria();
+  const [now, setNow] = useState(new Date());
+  const [add, setAdd] = useState(false);
+  useEffect(() => {
+    const t = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(t);
+  }, []);
+  const mine = activities.filter(
+    (a) => isVisibleActivity(a, activeProfile.id) && a.status !== "cancelled",
+  );
+  const classes = recurrentClasses.filter(
+    (c) => c.profile_id === activeProfile.id && c.subject?.is_active !== false,
+  );
+  const events = [
+    ...projectRecurrentClassesForRange(
+      classes,
+      startOfDay(now),
+      endOfDay(now),
+      profiles,
+    ),
+    ...formatActivitiesToCalendarEvents(mine).filter((e) =>
+      isSameDay(e.start, now),
+    ),
+  ].sort((a, b) => +a.start - +b.start);
+  const upcoming = mine
+    .filter(
+      (a) => a.status !== "completed" && new Date(a.start_datetime) >= now,
+    )
+    .sort(
+      (a, b) => Date.parse(a.start_datetime) - Date.parse(b.start_datetime),
     );
-  }, [recurrentClasses, activeProfile]);
-
-  const userActivities = useMemo(() => {
-    return activities.filter(
-      (a) => (a.profile_id || GERARDO_PROFILE_ID) === activeProfile.id || a.is_shared
-    );
-  }, [activities, activeProfile]);
-
-  const status = useMemo(() => {
-    const projected = projectRecurrentClassesForRange(userClasses, dayStart, dayEnd);
-    const actEvents = formatActivitiesToCalendarEvents(userActivities);
-    const combined = [...projected, ...actEvents];
-
-    return calculateDailyStatus(combined, now);
-  }, [userClasses, userActivities]);
-
-  // Next upcoming exam for active user
-  const nextExam = useMemo(() => {
-    return userActivities
-      .filter((a) => a.type === 'exam' && new Date(a.start_datetime) > now)
-      .sort((a, b) => new Date(a.start_datetime).getTime() - new Date(b.start_datetime).getTime())[0];
-  }, [userActivities]);
-
-  const greeting = () => {
-    const hour = now.getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 19) return 'Buenas tardes';
-    return 'Buenas noches';
-  };
-
-  const formattedToday = format(now, "EEEE d 'de' MMMM", { locale: es });
-  const capitalizedToday = formattedToday.charAt(0).toUpperCase() + formattedToday.slice(1);
-
+  const next = events.find((e) => e.end > now && e.status !== "completed");
+  const inProgress = next && next.start <= now;
+  const pending = mine.filter(
+    (a) => (a.type === "task" || a.type === "exam") && a.status !== "completed",
+  );
+  const overdue = pending.filter(
+    (a) => new Date(a.start_datetime) < startOfDay(now),
+  ).length;
   return (
-    <div className="mx-auto max-w-4xl p-4 md:p-6 space-y-6">
-      {/* Greeting Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="page dashboard">
+      <div className="page-heading">
         <div>
-          <span className="text-xs font-semibold uppercase tracking-wider text-blue-400">
-            {capitalizedToday}
-          </span>
-          <h1 className="text-2xl font-bold tracking-tight text-white md:text-3xl">
-            {greeting()}, {activeProfile.nickname || activeProfile.name} {activeProfile.role === 'partner' ? '💖' : '🎓'}
-          </h1>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onOpenQuickAdd}
-            className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-xs font-semibold text-white shadow-md shadow-blue-500/20 hover:from-blue-500 hover:to-indigo-500 transition active:scale-95"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-yellow-300" />
-            <span>+ memorIA</span>
-          </button>
-          <Link
-            href="/calendar"
-            className="flex items-center gap-1 rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-medium text-slate-300 hover:bg-slate-700 hover:text-white transition"
-          >
-            <Calendar className="h-3.5 w-3.5" />
-            <span>Ver Calendario</span>
-          </Link>
-        </div>
-      </div>
-
-      {/* Hero Live Status Card */}
-      {status.currentEvent ? (
-        <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-950/40 to-[#0d1620] p-5 shadow-xl">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-400">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
-            </span>
-            <span>Actividad en curso ahora mismo</span>
-          </div>
-
-          <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-extrabold text-white">
-                {status.currentEvent.title}
-              </h2>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                <span className="flex items-center gap-1 text-slate-400">
-                  <Clock className="h-3.5 w-3.5 text-emerald-400" />
-                  <span>
-                    {format(status.currentEvent.start, 'HH:mm')} - {format(status.currentEvent.end, 'HH:mm')}
-                  </span>
-                </span>
-                {status.currentEvent.classroom && (
-                  <span className="flex items-center gap-1 rounded bg-slate-800/80 px-2 py-0.5 text-emerald-300 border border-emerald-500/30">
-                    <MapPin className="h-3 w-3" />
-                    <span>{status.currentEvent.classroom}</span>
-                  </span>
-                )}
-                {status.currentEvent.professor && (
-                  <span className="text-slate-400">Docente: {status.currentEvent.professor}</span>
-                )}
-              </div>
-            </div>
-
-            <div className="text-right sm:border-l sm:border-slate-800/80 sm:pl-6">
-              <span className="text-[11px] text-slate-400">Finaliza a las</span>
-              <div className="text-lg font-mono font-bold text-white">
-                {format(status.currentEvent.end, 'HH:mm')}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : status.nextEvent ? (
-        <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-br from-blue-950/30 to-[#0d1424] p-5 shadow-xl">
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-400">
-            <Clock className="h-4 w-4" />
-            <span>Próxima actividad hoy</span>
-            {status.minutesToNextEvent !== null && (
-              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] text-blue-300">
-                en {status.minutesToNextEvent} minutos
-              </span>
-            )}
-          </div>
-
-          <div className="mt-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-bold text-white">{status.nextEvent.title}</h2>
-              <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                <span className="flex items-center gap-1 text-slate-400">
-                  <Clock className="h-3.5 w-3.5 text-blue-400" />
-                  <span>
-                    {format(status.nextEvent.start, 'HH:mm')} - {format(status.nextEvent.end, 'HH:mm')}
-                  </span>
-                </span>
-                {status.nextEvent.classroom && (
-                  <span className="flex items-center gap-1 rounded bg-slate-800/80 px-2 py-0.5 text-blue-300 border border-blue-500/30">
-                    <MapPin className="h-3 w-3" />
-                    <span>{status.nextEvent.classroom}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="rounded-2xl border border-slate-800 bg-[#0d1320] p-5 text-center">
-          <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-400" />
-          <h2 className="mt-2 text-base font-bold text-white">¡Día libre de clases por hoy!</h2>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Aprovecha para avanzar tareas o planear tus sesiones de estudio.
+          <h1>Tu día, {activeProfile.nickname || activeProfile.name}.</h1>
+          <p>
+            {format(now, "EEEE d 'de' MMMM", { locale: es })}. Un paso a la vez.
           </p>
         </div>
-      )}
-
-      {/* Two Column Grid: Today's Timeline + Focus & Exam Countdown */}
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
-        {/* Left 2 Cols: Timeline for Today */}
-        <div className="md:col-span-2 space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-slate-300">
-              Cronograma de Hoy ({status.todayEvents.length})
-            </h2>
-            {status.totalTasksToday > 0 && (
-              <span className="text-xs text-slate-400">
-                Tareas: {status.tasksDoneToday}/{status.totalTasksToday} completadas
-              </span>
-            )}
-          </div>
-
-          {status.todayEvents.length === 0 ? (
-            <div className="rounded-xl border border-dashed border-slate-800 p-6 text-center text-xs text-slate-500">
-              No tienes eventos programados para hoy en tu calendario.
+        <button className="button secondary" onClick={() => setAdd(true)}>
+          <Plus size={18} /> Nueva actividad
+        </button>
+      </div>
+      {!isLoaded ? (
+        <div className="loading-skeleton" aria-label="Cargando tu agenda" />
+      ) : (
+        <>
+          <div className="day-overview">
+            <div className="next-moment">
+              <h2>
+                {next?.title ||
+                  (events.length
+                    ? "Ya terminaste por hoy."
+                    : "Espacio para lo que importa.")}
+              </h2>
+              {next && (
+                <p className="live-label">
+                  <span className="status-dot" />
+                  {inProgress ? "En este momento" : "Lo siguiente de hoy"}
+                </p>
+              )}
+              <p>
+                {next ? (
+                  <>
+                    {format(next.start, "HH:mm")} – {format(next.end, "HH:mm")}
+                    {next.classroom && <> · {next.classroom}</>}
+                    {next.sourceRecurrentClass?.session_type === "laboratory" &&
+                      " · Laboratorio"}
+                  </>
+                ) : events.length ? (
+                  "Puedes revisar lo pendiente o dejar listo mañana."
+                ) : (
+                  "Añade tus cursos o anota tu próxima actividad."
+                )}
+              </p>
+              <Link
+                href={
+                  subjects.some((s) => s.profile_id === activeProfile.id)
+                    ? "/calendar"
+                    : "/subjects"
+                }
+              >
+                {subjects.some((s) => s.profile_id === activeProfile.id)
+                  ? "Abrir calendario"
+                  : "Configurar mis cursos"}{" "}
+                <ArrowUpRight size={17} />
+              </Link>
             </div>
-          ) : (
-            <div className="space-y-2">
-              {status.todayEvents.map((e) => {
-                const isPastEvent = now > e.end;
-                const isCurrent = now >= e.start && now <= e.end;
-
-                return (
-                  <div
-                    key={e.id}
-                    className={`flex items-center justify-between rounded-xl border p-3 transition ${
-                      isCurrent
-                        ? 'border-emerald-500/50 bg-emerald-950/20'
-                        : isPastEvent
-                        ? 'border-slate-800/40 bg-[#0a0e17]/40 opacity-50'
-                        : 'border-slate-800 bg-[#0d1320]'
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="font-mono text-xs font-semibold text-slate-400 w-16 text-right shrink-0">
-                        {format(e.start, 'HH:mm')}
-                      </div>
-
-                      <div
-                        className="h-8 w-1 rounded-full shrink-0"
-                        style={{ backgroundColor: e.subject?.color || '#3b82f6' }}
-                      />
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-semibold text-sm text-white">
-                            {e.title}
-                          </span>
-                          {isCurrent && (
-                            <span className="rounded bg-emerald-500/20 px-1.5 py-0.2 text-[9px] font-bold text-emerald-400">
-                              AHORA
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
-                          <span>{format(e.start, 'HH:mm')} - {format(e.end, 'HH:mm')}</span>
-                          {e.classroom && (
-                            <>
-                              <span>•</span>
-                              <span className="flex items-center gap-0.5 text-slate-300">
-                                <MapPin className="h-3 w-3 text-slate-500" />
-                                {e.classroom}
-                              </span>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Checkbox if task */}
-                    {e.type === 'task' && e.sourceActivity && (
-                      <button
-                        onClick={() => toggleActivityStatus(e.sourceActivity!.id)}
-                        className={`flex h-6 w-6 items-center justify-center rounded-md border transition ${
-                          e.status === 'completed'
-                            ? 'border-emerald-500 bg-emerald-600 text-white'
-                            : 'border-slate-700 bg-slate-800 hover:border-blue-500'
-                        }`}
-                      >
-                        {e.status === 'completed' && <Check className="h-3.5 w-3.5 stroke-[3]" />}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Right 1 Col: Quick Info Cards */}
-        <div className="space-y-4">
-          {/* Lunch Time Slot Card */}
-          <div className="rounded-xl border border-amber-500/20 bg-amber-950/10 p-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-amber-400">
-              <Utensils className="h-4 w-4" />
-              <span>Pausa de Almuerzo</span>
-            </div>
-            <p className="mt-1 text-xs text-slate-300 font-semibold">13:00 - 14:00</p>
-            <p className="text-[11px] text-slate-400 mt-0.5">
-              Tu horario reserva este espacio para descanso y comida.
-            </p>
-          </div>
-
-          {/* Exam Countdown Card */}
-          {nextExam ? (
-            <div className="rounded-xl border border-indigo-500/30 bg-indigo-950/20 p-4 space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="flex items-center gap-1.5 text-xs font-bold text-indigo-400">
-                  <GraduationCap className="h-4 w-4" />
-                  Próximo Examen
-                </span>
-                <span className="rounded-full bg-indigo-500/20 px-2 py-0.5 text-[10px] font-bold text-indigo-300">
-                  {differenceInDays(new Date(nextExam.start_datetime), now)} días
+            <div className="overview-counts">
+              <div>
+                <strong>{events.length}</strong>
+                <span>
+                  {events.length === 1 ? "actividad hoy" : "actividades hoy"}
                 </span>
               </div>
-              <h3 className="font-bold text-sm text-white">{nextExam.title}</h3>
-              <p className="text-[11px] text-slate-400">
-                {format(new Date(nextExam.start_datetime), "EEEE d 'de' MMMM", { locale: es })}
-              </p>
-
-              <button
-                onClick={onOpenPlanner}
-                className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white shadow hover:bg-indigo-500 transition active:scale-95"
-              >
-                <Sparkles className="h-3.5 w-3.5" />
-                <span>Planear Sesiones de Estudio</span>
-              </button>
+              <div>
+                <strong>{pending.length}</strong>
+                <span>
+                  {pending.length === 1 ? "pendiente" : "pendientes"}
+                  {overdue > 0 && <em>{overdue} por revisar</em>}
+                </span>
+              </div>
             </div>
-          ) : (
-            <div className="rounded-xl border border-slate-800 bg-[#0d1320] p-4 text-center text-xs text-slate-500">
-              No tienes exámenes registrados próximamente.
-            </div>
-          )}
-
-          {/* Direct Link to subjects */}
-          <div className="rounded-xl border border-slate-800 bg-[#0d1320] p-4">
-            <h3 className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-              Tus Asignaturas ({userSubjects.length})
-            </h3>
-            <div className="mt-2 space-y-1">
-              {userSubjects.slice(0, 4).map((s) => (
-                <div key={s.id} className="flex items-center justify-between text-xs text-slate-400">
-                  <div className="flex items-center gap-2 truncate">
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: s.color }} />
-                    <span className="truncate">{s.name}</span>
-                  </div>
-                  {s.classroom && <span className="text-[10px] text-slate-500">{s.classroom}</span>}
-                </div>
-              ))}
-            </div>
-            <Link
-              href="/subjects"
-              className="mt-3 flex items-center justify-center gap-1 text-xs font-medium text-blue-400 hover:text-blue-300"
-            >
-              <span>Ver todas las materias</span>
-              <ArrowRight className="h-3 w-3" />
-            </Link>
           </div>
-        </div>
-      </div>
+          <div className="dashboard-columns">
+            <section className="day-agenda">
+              <div className="section-heading">
+                <h2>Agenda de hoy</h2>
+                <span className="hint">Hora de Perú</span>
+              </div>
+              {!events.length ? (
+                <div className="empty-state">
+                  <CalendarDays size={30} />
+                  <h3>Un día por escribir</h3>
+                  <p>
+                    Las clases y laboratorios aparecerán aquí según el horario
+                    de tus cursos.
+                  </p>
+                  <Link className="text-button" href="/subjects">
+                    Añadir mis cursos
+                  </Link>
+                </div>
+              ) : (
+                <ol className="agenda-list">
+                  {events.map((e) => (
+                    <li
+                      key={e.id}
+                      className={
+                        e.end < now ? "past" : e.id === next?.id ? "next" : ""
+                      }
+                    >
+                      <time>
+                        {format(e.start, "HH:mm")}
+                        <small>{format(e.end, "HH:mm")}</small>
+                      </time>
+                      <div className="agenda-entry">
+                        <div className="entry-kind">
+                          <span
+                            className="course-dot"
+                            style={{
+                              background:
+                                e.subject?.color || activeProfile.avatar_color,
+                            }}
+                          />
+                          {e.sourceRecurrentClass
+                            ? {
+                                theory: "Teoría",
+                                laboratory: "Laboratorio",
+                                practice: "Práctica",
+                              }[e.sourceRecurrentClass.session_type || "theory"]
+                            : e.isShared
+                              ? "Compartida"
+                              : e.type === "exam"
+                                ? "Examen"
+                                : e.type === "task"
+                                  ? "Tarea"
+                                  : "Personal"}
+                        </div>
+                        <h3>
+                          {e.sourceRecurrentClass
+                            ? e.subject?.name || e.title
+                            : e.title}
+                        </h3>
+                        {(e.classroom || e.professor) && (
+                          <p>
+                            {e.classroom && (
+                              <span>
+                                <MapPin size={13} />
+                                {e.classroom}
+                              </span>
+                            )}
+                            {e.professor && <span>{e.professor}</span>}
+                          </p>
+                        )}
+                      </div>
+                      {e.type === "task" && (
+                        <button
+                          className={`task-check ${e.status === "completed" ? "checked" : ""}`}
+                          aria-label={
+                            e.status === "completed"
+                              ? `Marcar pendiente: ${e.title}`
+                              : `Completar: ${e.title}`
+                          }
+                          onClick={() => toggleActivityStatus(e.id)}
+                        >
+                          {e.status === "completed" && <Check size={17} />}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
+            <aside className="day-side">
+              <section className="upcoming-panel">
+                <div className="section-heading">
+                  <h2>En el horizonte</h2>
+                  <BookOpen size={18} />
+                </div>
+                {upcoming.slice(0, 3).map((a) => (
+                  <div className="upcoming-row" key={a.id}>
+                    <span>
+                      {differenceInCalendarDays(
+                        new Date(a.start_datetime),
+                        now,
+                      ) === 0
+                        ? "Hoy"
+                        : format(new Date(a.start_datetime), "d MMM", {
+                            locale: es,
+                          })}
+                    </span>
+                    <strong>{a.title}</strong>
+                    <small>{a.subject?.name || "Personal"}</small>
+                  </div>
+                ))}
+                {!upcoming.length && (
+                  <p className="hint">
+                    Tus próximas entregas y planes aparecerán aquí.
+                  </p>
+                )}
+                {upcoming.some((a) => a.type === "exam") && (
+                  <button
+                    className="button secondary small"
+                    onClick={onOpenPlanner}
+                  >
+                    Organizar mi estudio
+                  </button>
+                )}
+              </section>
+              <section className="invitation-preview">
+                <div className="section-heading">
+                  <h2>Entre los dos</h2>
+                  <Link
+                    href="/together"
+                    aria-label="Ver todas las invitaciones"
+                  >
+                    <ArrowUpRight size={20} />
+                  </Link>
+                </div>
+                <InvitationList compact />
+              </section>
+            </aside>
+          </div>
+        </>
+      )}
+      <ActivityModal isOpen={add} onClose={() => setAdd(false)} />
     </div>
   );
 }

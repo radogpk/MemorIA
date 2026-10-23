@@ -14,6 +14,7 @@ const withSerwist = withSerwistInit({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  serverExternalPackages: ['node:sqlite'],
   outputFileTracingRoot: __dirname,
 };
 

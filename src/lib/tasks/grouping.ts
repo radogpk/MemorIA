@@ -1,5 +1,12 @@
-import { Activity } from '@/types/database.types';
-import { isBefore, isSameDay, startOfDay, endOfDay, isThisWeek, parseISO } from 'date-fns';
+import { Activity } from "@/types/database.types";
+import {
+  isBefore,
+  isSameDay,
+  startOfDay,
+  endOfDay,
+  isSameWeek,
+  parseISO,
+} from "date-fns";
 
 export interface TaskGroups {
   overdue: Activity[];
@@ -11,7 +18,7 @@ export interface TaskGroups {
 
 export function groupTasksByDueCategory(
   tasks: Activity[],
-  referenceDate: Date = new Date()
+  referenceDate: Date = new Date(),
 ): TaskGroups {
   const groups: TaskGroups = {
     overdue: [],
@@ -25,7 +32,8 @@ export function groupTasksByDueCategory(
   const todayEnd = endOfDay(referenceDate);
 
   for (const task of tasks) {
-    if (task.status === 'completed') {
+    if (task.status === "cancelled") continue;
+    if (task.status === "completed") {
       groups.completed.push(task);
       continue;
     }
@@ -36,12 +44,18 @@ export function groupTasksByDueCategory(
       groups.overdue.push(task);
     } else if (isSameDay(dueDate, referenceDate)) {
       groups.today.push(task);
-    } else if (isThisWeek(dueDate, { weekStartsOn: 1 })) {
+    } else if (isSameWeek(dueDate, referenceDate, { weekStartsOn: 1 })) {
       groups.thisWeek.push(task);
     } else {
       groups.upcoming.push(task);
     }
   }
 
+  Object.values(groups).forEach((rows) =>
+    rows.sort(
+      (a: Activity, b: Activity) =>
+        Date.parse(a.start_datetime) - Date.parse(b.start_datetime),
+    ),
+  );
   return groups;
 }

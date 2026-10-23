@@ -1,10 +1,18 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { startOfWeek, endOfWeek, eachDayOfInterval, format, isSameDay, isToday } from 'date-fns';
-import { es } from 'date-fns/locale';
-import { CalendarEvent } from '@/lib/calendar/types';
-import { CalendarEventCard } from './CalendarEventCard';
+import React from "react";
+import {
+  startOfWeek,
+  endOfWeek,
+  eachDayOfInterval,
+  format,
+  isSameDay,
+  isToday,
+} from "date-fns";
+import { es } from "date-fns/locale";
+import { CalendarEvent } from "@/lib/calendar/types";
+import { CalendarEventCard } from "./CalendarEventCard";
+import { layoutTimedEvents } from "@/lib/calendar/layout";
 
 interface Props {
   currentDate: Date;
@@ -14,9 +22,6 @@ interface Props {
   onToggleTask: (id: string) => void;
 }
 
-const START_HOUR = 7; // 07:00 AM
-const END_HOUR = 22;  // 10:00 PM
-const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
 const HOUR_HEIGHT_PX = 60; // 60px per hour
 
 export function WeekView({
@@ -30,6 +35,9 @@ export function WeekView({
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
+  const START_HOUR = Math.min(7, ...events.map((e) => e.start.getHours()));
+  const END_HOUR = Math.max(22, ...events.map((e) => e.start.getHours()));
+  const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
 
   // Position calculation
@@ -39,10 +47,16 @@ export function WeekView({
     const endHour = event.end.getHours();
     const endMinutes = event.end.getMinutes();
 
-    const topMinutes = Math.max(0, (startHour - START_HOUR) * 60 + startMinutes);
+    const topMinutes = Math.max(
+      0,
+      (startHour - START_HOUR) * 60 + startMinutes,
+    );
     const durationMinutes = Math.max(
       30,
-      (endHour - startHour) * 60 + (endMinutes - startMinutes)
+      Math.min(
+        (event.end.getTime() - event.start.getTime()) / 60000,
+        (24 - startHour) * 60 - startMinutes,
+      ),
     );
 
     const topPx = (topMinutes / 60) * HOUR_HEIGHT_PX;
@@ -66,20 +80,22 @@ export function WeekView({
         {/* 7 Days headers */}
         {days.map((day) => {
           const isCurrent = isToday(day);
-          const dayName = format(day, 'EEE', { locale: es }).toUpperCase();
-          const dayNumber = format(day, 'd');
+          const dayName = format(day, "EEE", { locale: es }).toUpperCase();
+          const dayNumber = format(day, "d");
 
           return (
             <div
               key={day.toISOString()}
               className={`border-r border-slate-800/80 p-2 text-center transition ${
-                isCurrent ? 'bg-blue-600/10 text-blue-400' : 'text-slate-400'
+                isCurrent ? "bg-blue-600/10 text-blue-400" : "text-slate-400"
               }`}
             >
-              <div className="text-[10px] font-medium tracking-wider">{dayName}</div>
+              <div className="text-[10px] font-medium tracking-wider">
+                {dayName}
+              </div>
               <div
                 className={`mx-auto mt-0.5 flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold ${
-                  isCurrent ? 'bg-blue-600 text-white' : 'text-slate-200'
+                  isCurrent ? "bg-blue-600 text-white" : "text-slate-200"
                 }`}
               >
                 {dayNumber}
@@ -91,7 +107,10 @@ export function WeekView({
 
       {/* Hourly Scrollable Grid */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-8 relative" style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT_PX}px` }}>
+        <div
+          className="grid grid-cols-8 relative"
+          style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT_PX}px` }}
+        >
           {/* Time scale column */}
           <div className="border-r border-slate-800/80 bg-[#0a0f1a]/50 text-right pr-2">
             {hours.map((hour) => (
@@ -100,7 +119,7 @@ export function WeekView({
                 style={{ height: `${HOUR_HEIGHT_PX}px` }}
                 className="border-b border-slate-800/40 text-[10px] font-mono text-slate-500 pt-1"
               >
-                {hour.toString().padStart(2, '0')}:00
+                {hour.toString().padStart(2, "0")}:00
               </div>
             ))}
           </div>
@@ -109,22 +128,29 @@ export function WeekView({
           {days.map((day) => {
             const isCurrent = isToday(day);
             const dayEvents = events.filter((e) => isSameDay(e.start, day));
+            const eventLayout = layoutTimedEvents(dayEvents);
 
             return (
               <div
                 key={day.toISOString()}
                 className={`relative border-r border-slate-800/60 ${
-                  isCurrent ? 'bg-blue-950/10' : ''
+                  isCurrent ? "bg-blue-950/10" : ""
                 }`}
               >
                 {/* Horizontal hour grid lines for clicking */}
                 {hours.map((hour) => (
                   <div
                     key={hour}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Crear actividad el ${format(day, "dd/MM")} a las ${hour}:00`}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") onSlotClick(day, hour);
+                    }}
                     onClick={() => onSlotClick(day, hour)}
                     style={{ height: `${HOUR_HEIGHT_PX}px` }}
                     className="border-b border-slate-800/30 hover:bg-slate-800/20 cursor-pointer transition"
-                    title={`Crear evento el ${format(day, 'dd/MM')} a las ${hour}:00`}
+                    title={`Crear evento el ${format(day, "dd/MM")} a las ${hour}:00`}
                   />
                 ))}
 
@@ -134,7 +160,11 @@ export function WeekView({
                   return (
                     <div
                       key={event.id}
-                      style={posStyle}
+                      style={{
+                        ...posStyle,
+                        left: `calc(${((eventLayout.get(event.id)?.column || 0) * 100) / (eventLayout.get(event.id)?.columns || 1)}% + 3px)`,
+                        width: `calc(${100 / (eventLayout.get(event.id)?.columns || 1)}% - 6px)`,
+                      }}
                       className="absolute left-1 right-1 z-10"
                     >
                       <CalendarEventCard

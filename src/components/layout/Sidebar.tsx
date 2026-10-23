@@ -1,131 +1,77 @@
-'use client';
-
-import React from 'react';
-import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Calendar, BookOpen, CheckSquare, Sparkles, LayoutDashboard } from 'lucide-react';
-import { useMemoria } from '@/lib/storage/store';
-import { GERARDO_PROFILE_ID } from '@/lib/supabase/data';
-
+"use client";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import {
+  CalendarDays,
+  BookOpen,
+  CheckSquare,
+  LayoutDashboard,
+  HeartHandshake,
+} from "lucide-react";
+import { useMemoria } from "@/lib/storage/store";
+import { isPendingInvitation } from "@/lib/storage/model";
+export const NAV_ITEMS = [
+  { href: "/today", label: "Mi día", icon: LayoutDashboard },
+  { href: "/calendar", label: "Calendario", icon: CalendarDays },
+  { href: "/subjects", label: "Cursos", icon: BookOpen },
+  { href: "/tasks", label: "Pendientes", icon: CheckSquare },
+  { href: "/together", label: "Invitaciones", icon: HeartHandshake },
+];
 export function Sidebar() {
-  const pathname = usePathname();
-  const { subjects, activities, activeProfile } = useMemoria();
-
-  const userSubjects = subjects.filter(
-    (s) => (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id
-  );
-
-  const pendingTasksCount = activities.filter(
+  const path = usePathname();
+  const { activeProfile, partnerProfile, activities } = useMemoria();
+  const incoming = activities.filter(
     (a) =>
-      a.type === 'task' &&
-      a.status !== 'completed' &&
-      ((a.profile_id || GERARDO_PROFILE_ID) === activeProfile.id || a.is_shared)
+      a.invitation?.recipient_id === activeProfile.id &&
+      isPendingInvitation(a),
   ).length;
-
-  const navItems = [
-    {
-      label: 'Mi Día',
-      href: '/today',
-      icon: LayoutDashboard,
-      badge: 'Hoy',
-    },
-    {
-      label: 'Calendario',
-      href: '/calendar',
-      icon: Calendar,
-      badge: null,
-    },
-    {
-      label: 'Materias & Horario',
-      href: '/subjects',
-      icon: BookOpen,
-      badge: userSubjects.length,
-    },
-    {
-      label: 'Tareas & Entregas',
-      href: '/tasks',
-      icon: CheckSquare,
-      badge: pendingTasksCount > 0 ? pendingTasksCount : null,
-    },
-  ];
-
   return (
-    <aside className="hidden md:flex w-64 flex-col border-r border-slate-800/80 bg-[#0b0f19] p-4 text-sm">
-      <div className="mb-6 px-2">
-        <div className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 font-bold text-white shadow-md shadow-blue-500/20">
-            m
-          </div>
-          <div>
-            <h1 className="font-bold tracking-tight text-white">memorIA</h1>
-            <p className="text-[11px] text-slate-400">Campus Productivity</p>
-          </div>
-        </div>
-      </div>
-
-      <nav className="space-y-1">
-        {navItems.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname.startsWith(item.href);
-
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center justify-between rounded-lg px-3 py-2.5 font-medium transition ${
-                isActive
-                  ? 'bg-blue-600/15 text-blue-400 border border-blue-500/20'
-                  : 'text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <Icon className={`h-4 w-4 ${isActive ? 'text-blue-400' : 'text-slate-500'}`} />
-                <span>{item.label}</span>
-              </div>
-              {item.badge !== null && (
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
-                    isActive
-                      ? 'bg-blue-500/20 text-blue-300'
-                      : 'bg-slate-800 text-slate-400'
-                  }`}
-                >
-                  {item.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
+    <aside className="app-sidebar">
+      <Link className="wordmark" href="/today">
+        memorIA
+        <span className="brand-dot" />
+      </Link>
+      <p className="sidebar-caption">
+        Menos ruido.
+        <br />
+        Más presente.
+      </p>
+      <nav aria-label="Navegación principal">
+        {NAV_ITEMS.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            className={path === item.href || path.startsWith(`${item.href}/`) ? "active" : ""}
+            aria-current={path === item.href || path.startsWith(`${item.href}/`) ? "page" : undefined}
+          >
+            <item.icon size={19} />
+            <span>{item.label}</span>
+            {item.href === "/together" && incoming > 0 && (
+              <span className="count">{incoming}</span>
+            )}
+          </Link>
+        ))}
       </nav>
-
-      {/* Active Subjects quick list */}
-      <div className="mt-8 border-t border-slate-800/80 pt-4">
-        <h2 className="px-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">
-          Mis Materias ({userSubjects.length})
-        </h2>
-        <div className="mt-2 space-y-1">
-          {userSubjects.map((s) => (
-            <div
-              key={s.id}
-              className="flex items-center gap-2.5 rounded-md px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-800/40"
-            >
-              <span
-                className="h-2.5 w-2.5 rounded-full"
-                style={{ backgroundColor: s.color }}
-              />
-              <span className="truncate">{s.name}</span>
-            </div>
-          ))}
+      <div className="duo-note">
+        <div className="paired-avatars">
+          <span style={{ background: activeProfile.avatar_color }}>
+            {activeProfile.name[0]}
+          </span>
+          <span style={{ background: partnerProfile?.avatar_color }}>
+            {partnerProfile?.name[0]}
+          </span>
         </div>
+        <strong>
+          Dos agendas.
+          <br />
+          Un espacio en común.
+        </strong>
+        <p>Lo tuyo, lo suyo y lo que planean juntos.</p>
+        <Link href="/together">Ver planes compartidos</Link>
       </div>
-
-      {/* Bottom PWA Info */}
-      <div className="mt-auto border-t border-slate-800/80 pt-4 text-xs text-slate-500">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-          <span>Modo Offline Listo</span>
-        </div>
-      </div>
+      <Link className="sidebar-footer" href="/settings">
+        Datos y respaldo
+      </Link>
     </aside>
   );
 }

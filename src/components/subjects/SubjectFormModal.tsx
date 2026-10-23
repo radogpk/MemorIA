@@ -1,271 +1,231 @@
-'use client';
-
-import React, { useState, useEffect } from 'react';
-import { X, BookOpen, AlertCircle } from 'lucide-react';
-import { Subject, CreateSubjectInput } from '@/types/database.types';
-import { ClassScheduleSelector, ScheduleSlot } from './ClassScheduleSelector';
-import { validateSubjectInput, validateClassScheduleSlot } from '@/lib/actions/subjects-validation';
-import { useMemoria } from '@/lib/storage/store';
-
-interface Props {
-  isOpen: boolean;
-  onClose: () => void;
-  onSave: (subjectData: CreateSubjectInput, slots: ScheduleSlot[]) => void;
-  initialSubject?: Subject | null;
-  initialSlots?: ScheduleSlot[];
-}
-
-const COLOR_PRESETS = [
-  '#3b82f6', // Blue
-  '#06b6d4', // Cyan
-  '#10b981', // Emerald
-  '#8b5cf6', // Violet
-  '#f59e0b', // Amber
-  '#ec4899', // Pink
-  '#ef4444', // Red
-  '#14b8a6', // Teal
-];
-
+"use client";
+import { useState, useEffect } from "react";
+import { Subject, CreateSubjectInput } from "@/types/database.types";
+import { ClassScheduleSelector, ScheduleSlot } from "./ClassScheduleSelector";
+import { validateClassScheduleSlot } from "@/lib/actions/subjects-validation";
+import { useMemoria } from "@/lib/storage/store";
+import { Modal } from "@/components/ui/Modal";
 export function SubjectFormModal({
   isOpen,
   onClose,
   onSave,
   initialSubject,
   initialSlots = [],
-}: Props) {
-  const { profiles, activeProfile } = useMemoria();
-  const [profileId, setProfileId] = useState<string>(activeProfile.id);
-  const [name, setName] = useState('');
-  const [code, setCode] = useState('');
-  const [color, setColor] = useState('#3b82f6');
-  const [professor, setProfessor] = useState('');
-  const [classroom, setClassroom] = useState('');
+}: {
+  isOpen: boolean;
+  onClose: () => void;
+  onSave: (input: CreateSubjectInput, slots: ScheduleSlot[]) => void;
+  initialSubject?: Subject | null;
+  initialSlots?: ScheduleSlot[];
+}) {
+  const { activeProfile } = useMemoria();
+  const [form, setForm] = useState({
+    name: "",
+    code: "",
+    professor: "",
+    classroom: "",
+    color: "#7cb8df",
+  });
   const [slots, setSlots] = useState<ScheduleSlot[]>([]);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
+  const [error, setError] = useState("");
   useEffect(() => {
-    if (initialSubject) {
-      setProfileId(initialSubject.profile_id || activeProfile.id);
-      setName(initialSubject.name);
-      setCode(initialSubject.code || '');
-      setColor(initialSubject.color);
-      setProfessor(initialSubject.professor || '');
-      setClassroom(initialSubject.classroom || '');
-      setSlots(initialSlots);
-    } else {
-      setProfileId(activeProfile.id);
-      setName('');
-      setCode('');
-      setColor('#3b82f6');
-      setProfessor('');
-      setClassroom('');
-      setSlots([]);
-    }
-    setErrorMessage(null);
-  }, [initialSubject, initialSlots, isOpen, activeProfile.id]);
-
-  if (!isOpen) return null;
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrorMessage(null);
-
-    // Validate subject
-    const subjectValidation = validateSubjectInput({ name, color, code });
-    if (!subjectValidation.valid) {
-      setErrorMessage(subjectValidation.error || 'Error en los datos de la materia.');
-      return;
-    }
-
-    // Validate schedule slots
-    for (const slot of slots) {
-      const slotValidation = validateClassScheduleSlot(slot);
-      if (!slotValidation.valid) {
-        setErrorMessage(slotValidation.error || 'Error en las franjas horarias.');
-        return;
-      }
-    }
-
-    onSave(
-      {
-        name: name.trim(),
-        code: code.trim() || null,
-        color,
-        professor: professor.trim() || null,
-        classroom: classroom.trim() || null,
-        is_active: true,
-        profile_id: profileId,
-      },
-      slots
-    );
-    onClose();
-  };
-
+    if (!isOpen) return;
+    setForm({
+      name: initialSubject?.name || "",
+      code: initialSubject?.code || "",
+      professor: initialSubject?.professor || "",
+      classroom: initialSubject?.classroom || "",
+      color: initialSubject?.color || "#7cb8df",
+    });
+    setSlots(initialSlots);
+    setError("");
+    // Initialize only when the editor opens or its record changes, not on polling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, initialSubject?.id]);
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="w-full max-w-lg rounded-2xl border border-slate-800 bg-[#0f1523] p-6 shadow-2xl">
-        <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-          <div className="flex items-center gap-2">
-            <div
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
-              style={{ backgroundColor: color }}
-            >
-              <BookOpen className="h-4 w-4" />
-            </div>
-            <h2 className="text-base font-bold text-white">
-              {initialSubject ? 'Editar Materia' : 'Nueva Materia & Horario'}
-            </h2>
+    <Modal
+      open={isOpen}
+      onClose={onClose}
+      title={initialSubject ? "Editar curso" : "Nuevo curso"}
+      wide
+    >
+      <form
+        className="dialog-body"
+        onSubmit={(e) => {
+          e.preventDefault();
+          setError("");
+          const fields = new FormData(e.currentTarget);
+          const termParts = [
+            fields.get("term_name"),
+            fields.get("term_start"),
+            fields.get("term_end"),
+          ].map((v) => String(v || "").trim());
+          if (termParts.some(Boolean) && termParts.some((v) => !v)) {
+            setError(
+              "Completa el nombre, inicio y fin del semestre, o deja los tres campos vacíos.",
+            );
+            return;
+          }
+          const actualSlots = slots.map((s, i) => ({
+            ...s,
+            start_time: String(fields.get(`slot_${i}_start`) || s.start_time),
+            end_time: String(fields.get(`slot_${i}_end`) || s.end_time),
+          }));
+          for (const slot of actualSlots) {
+            const result = validateClassScheduleSlot(slot);
+            if (!result.valid) {
+              setError(result.error!);
+              return;
+            }
+          }
+          try {
+            onSave(
+              {
+                name: form.name.trim(),
+                code: form.code.trim() || null,
+                professor: form.professor.trim() || null,
+                classroom: form.classroom.trim() || null,
+                color: form.color,
+                is_active: initialSubject?.is_active ?? true,
+                profile_id: initialSubject?.profile_id || activeProfile.id,
+                holiday_policy: String(
+                  fields.get("holiday_policy") || "inherit",
+                ) as "inherit" | "skip" | "attend",
+                term:
+                  fields.get("term_start") ||
+                  fields.get("term_end") ||
+                  fields.get("term_name")
+                    ? {
+                        name: String(fields.get("term_name") || "").trim(),
+                        start_date: String(fields.get("term_start") || ""),
+                        end_date: String(fields.get("term_end") || ""),
+                      }
+                    : null,
+              },
+              actualSlots,
+            );
+            onClose();
+          } catch (e) {
+            setError(e instanceof Error ? e.message : "No se pudo guardar.");
+          }
+        }}
+      >
+        <p className="hint">
+          Curso de {initialSubject ? "su perfil actual" : activeProfile.name}.
+          Los laboratorios se guardan dentro del curso.
+        </p>
+        {error && (
+          <p className="notice error" role="alert">
+            {error}
+          </p>
+        )}
+        <div className="form-grid">
+          <label className="span-2">
+            Nombre del curso
+            <input
+              required
+              maxLength={100}
+              autoFocus
+              value={form.name}
+              onChange={(e) => setForm({ ...form, name: e.target.value })}
+            />
+          </label>
+          <label>
+            Código
+            <input
+              maxLength={20}
+              value={form.code}
+              onChange={(e) => setForm({ ...form, code: e.target.value })}
+            />
+          </label>
+          <label>
+            Color
+            <input
+              aria-label="Color del curso"
+              type="color"
+              value={form.color}
+              onChange={(e) => setForm({ ...form, color: e.target.value })}
+            />
+          </label>
+          <label>
+            Docente de teoría
+            <input
+              maxLength={100}
+              value={form.professor}
+              onChange={(e) => setForm({ ...form, professor: e.target.value })}
+            />
+          </label>
+          <label>
+            Aula de teoría
+            <input
+              maxLength={100}
+              value={form.classroom}
+              onChange={(e) => setForm({ ...form, classroom: e.target.value })}
+            />
+          </label>
+        </div>
+        <fieldset
+          className="academic-course"
+          key={`${isOpen}:${initialSubject?.id || "new"}`}
+        >
+          <legend>Semestre y feriados</legend>
+          <p className="hint">
+            Las sesiones se repiten solo entre estas fechas. Déjalas vacías si
+            el curso no tiene un semestre definido.
+          </p>
+          <div className="form-grid">
+            <label className="span-2">
+              Nombre del semestre
+              <input
+                name="term_name"
+                maxLength={60}
+                defaultValue={initialSubject?.term?.name || ""}
+                placeholder="Por ejemplo, 2026-II"
+              />
+            </label>
+            <label>
+              Inicio del semestre
+              <input
+                name="term_start"
+                type="date"
+                defaultValue={initialSubject?.term?.start_date || ""}
+              />
+            </label>
+            <label>
+              Fin del semestre
+              <input
+                name="term_end"
+                type="date"
+                defaultValue={initialSubject?.term?.end_date || ""}
+              />
+            </label>
+            <label className="span-2">
+              En los feriados registrados de este perfil
+              <select
+                name="holiday_policy"
+                defaultValue={initialSubject?.holiday_policy || "inherit"}
+              >
+                <option value="inherit">Usar la regla del perfil</option>
+                <option value="skip">Este curso no dicta clases</option>
+                <option value="attend">Este curso mantiene sus clases</option>
+              </select>
+            </label>
           </div>
-          <button
-            onClick={onClose}
-            className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
-          >
-            <X className="h-5 w-5" />
+          <p className="hint">
+            Un cambio por fecha tiene prioridad. Puedes mantener un laboratorio
+            aunque las demás clases se suspendan.
+          </p>
+        </fieldset>
+        <ClassScheduleSelector slots={slots} onChange={setSlots} />
+        <div className="dialog-actions">
+          <button type="button" className="button secondary" onClick={onClose}>
+            Cancelar
+          </button>
+          <button className="button" type="submit">
+            Guardar curso
           </button>
         </div>
-
-        {errorMessage && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-red-500/10 border border-red-500/20 p-2.5 text-xs text-red-400">
-            <AlertCircle className="h-4 w-4 shrink-0" />
-            <span>{errorMessage}</span>
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-          {/* Profile Owner Selection */}
-          <div className="rounded-xl border border-slate-800 bg-slate-800/40 p-3">
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-1.5">
-              ¿A qué perfil corresponde esta materia?
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              {profiles.map((p) => {
-                const isSelected = profileId === p.id;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => setProfileId(p.id)}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium transition ${
-                      isSelected
-                        ? 'bg-blue-600 text-white shadow-sm'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
-                  >
-                    <span
-                      className="h-2 w-2 rounded-full"
-                      style={{ backgroundColor: p.avatar_color }}
-                    />
-                    <span>{p.nickname || p.name}</span>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-            <div className="sm:col-span-2">
-              <label className="block text-xs font-medium text-slate-400">
-                Nombre de la materia *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="Ej. Cálculo Diferencial"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400">
-                Código
-              </label>
-              <input
-                type="text"
-                placeholder="MAT-101"
-                value={code}
-                onChange={(e) => setCode(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label className="block text-xs font-medium text-slate-400">
-                Profesor(a)
-              </label>
-              <input
-                type="text"
-                placeholder="Ej. Dra. Lovelace"
-                value={professor}
-                onChange={(e) => setProfessor(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-medium text-slate-400">
-                Aula / Ubicación general
-              </label>
-              <input
-                type="text"
-                placeholder="Ej. Aula 204 / Edif B"
-                value={classroom}
-                onChange={(e) => setClassroom(e.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-700 bg-slate-800/80 px-3 py-2 text-sm text-white placeholder-slate-500 focus:border-blue-500 focus:outline-none"
-              />
-            </div>
-          </div>
-
-          {/* Color palette */}
-          <div>
-            <label className="block text-xs font-medium text-slate-400 mb-1.5">
-              Color de identificación
-            </label>
-            <div className="flex flex-wrap items-center gap-2">
-              {COLOR_PRESETS.map((preset) => (
-                <button
-                  type="button"
-                  key={preset}
-                  onClick={() => setColor(preset)}
-                  className={`h-7 w-7 rounded-full transition-transform ${
-                    color === preset ? 'ring-2 ring-white ring-offset-2 ring-offset-slate-900 scale-110' : 'hover:scale-105'
-                  }`}
-                  style={{ backgroundColor: preset }}
-                />
-              ))}
-              <input
-                type="color"
-                value={color}
-                onChange={(e) => setColor(e.target.value)}
-                className="h-7 w-8 cursor-pointer rounded border-0 bg-transparent p-0"
-                title="Color personalizado"
-              />
-            </div>
-          </div>
-
-          {/* Schedule slots */}
-          <div className="border-t border-slate-800 pt-3">
-            <ClassScheduleSelector slots={slots} onChange={setSlots} />
-          </div>
-
-          <div className="flex justify-end gap-2 border-t border-slate-800 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition"
-            >
-              Cancelar
-            </button>
-            <button
-              type="submit"
-              className="rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-500 transition shadow-md shadow-blue-600/20"
-            >
-              Guardar Materia
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+      </form>
+    </Modal>
   );
 }

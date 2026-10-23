@@ -1,115 +1,132 @@
-'use client';
-
-import React from 'react';
-import { Subject, RecurrentClass } from '@/types/database.types';
-import { EVEBEBE_PROFILE_ID } from '@/lib/supabase/data';
-import { Edit2, Trash2, MapPin, User, Clock } from 'lucide-react';
-
-interface Props {
+"use client";
+import { useState } from "react";
+import { Pencil, Trash2, FlaskConical } from "lucide-react";
+import { Subject, RecurrentClass } from "@/types/database.types";
+import { DAYS, SESSION_LABELS } from "./ClassScheduleSelector";
+import { SessionExceptions } from "./SessionExceptions";
+export function SubjectCard({
+  subject,
+  classes,
+  onEdit,
+  onDelete,
+}: {
   subject: Subject;
   classes: RecurrentClass[];
-  onEdit: (subject: Subject) => void;
+  onEdit: (s: Subject) => void;
   onDelete: (id: string) => void;
-}
-
-const DAY_NAMES: Record<number, string> = {
-  1: 'Lun',
-  2: 'Mar',
-  3: 'Mié',
-  4: 'Jue',
-  5: 'Vie',
-  6: 'Sáb',
-  7: 'Dom',
-};
-
-export function SubjectCard({ subject, classes, onEdit, onDelete }: Props) {
+}) {
+  const [confirming, setConfirming] = useState(false);
   return (
-    <div className="group relative flex flex-col justify-between rounded-xl border border-slate-800 bg-[#0d1320] p-4 transition hover:border-slate-700 hover:shadow-lg hover:shadow-black/40">
-      <div>
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-center gap-2.5">
-            <span
-              className="h-3.5 w-3.5 rounded-full ring-offset-2 ring-offset-[#0d1320]"
-              style={{ backgroundColor: subject.color, boxShadow: `0 0 0 2px ${subject.color}` }}
-            />
-            <div>
-              <div className="flex items-center gap-1.5">
-                <h3 className="font-semibold text-white group-hover:text-blue-300 transition">
-                  {subject.name}
-                </h3>
-                {(subject.profile_id === EVEBEBE_PROFILE_ID || subject.profile_id === 'prof-novia') && (
-                  <span className="rounded bg-pink-900/40 px-1.5 py-0.5 text-[9px] font-semibold text-pink-300 border border-pink-500/30">
-                    💖 Evebebé
-                  </span>
-                )}
-              </div>
-              {subject.code && (
-                <span className="text-[11px] font-mono text-slate-400">
-                  {subject.code}
-                </span>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition">
-            <button
-              onClick={() => onEdit(subject)}
-              className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-white transition"
-              title="Editar"
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-            </button>
-            <button
-              onClick={() => onDelete(subject.id)}
-              className="rounded p-1 text-slate-400 hover:bg-slate-800 hover:text-red-400 transition"
-              title="Eliminar"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </button>
-          </div>
+    <article className="course-row">
+      <div className="course-identity">
+        <span className="course-dot" style={{ background: subject.color }} />
+        <div>
+          <h2>{subject.name}</h2>
+          <p>
+            {[
+              subject.code,
+              ...(classes.length ? [] : [subject.professor, subject.classroom]),
+            ]
+              .filter(Boolean)
+              .join(" · ") ||
+              (classes.length
+                ? "Horario semanal"
+                : "Detalles de teoría por completar")}
+          </p>
         </div>
-
-        {/* Metadata: Professor & Classroom */}
-        <div className="mt-3 space-y-1 text-xs text-slate-400">
-          {subject.professor && (
-            <div className="flex items-center gap-1.5">
-              <User className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-              <span className="truncate">{subject.professor}</span>
-            </div>
-          )}
-          {subject.classroom && (
-            <div className="flex items-center gap-1.5">
-              <MapPin className="h-3.5 w-3.5 text-slate-500 shrink-0" />
-              <span className="truncate">{subject.classroom}</span>
-            </div>
-          )}
+        <div className="row-actions">
+          <button
+            className="icon-button"
+            aria-label={`Editar ${subject.name}`}
+            onClick={() => onEdit(subject)}
+          >
+            <Pencil size={17} />
+          </button>
+          <button
+            className="icon-button"
+            aria-label={`Eliminar ${subject.name}`}
+            onClick={() => setConfirming(!confirming)}
+          >
+            <Trash2 size={17} />
+          </button>
         </div>
       </div>
-
-      {/* Class Schedule Badges */}
-      <div className="mt-4 border-t border-slate-800/80 pt-3">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-500">
-          Horarios semanales
-        </span>
-        <div className="mt-1.5 flex flex-wrap gap-1.5">
-          {classes.length === 0 ? (
-            <span className="text-xs text-slate-500 italic">Sin clases asignadas</span>
-          ) : (
-            classes.map((c) => (
-              <span
-                key={c.id}
-                className="flex items-center gap-1 rounded-md bg-slate-800/80 border border-slate-700/60 px-2 py-0.5 text-[11px] font-medium text-slate-300"
-              >
-                <Clock className="h-3 w-3 text-slate-400" />
-                <span className="font-semibold text-blue-400">
-                  {DAY_NAMES[c.day_of_week]}:
-                </span>
-                <span>{c.start_time} - {c.end_time}</span>
+      {subject.term && (
+        <p className="course-term">
+          {subject.term.name} ·{" "}
+          {subject.term.start_date.split("-").reverse().join("/")} al{" "}
+          {subject.term.end_date.split("-").reverse().join("/")}
+        </p>
+      )}
+      {subject.holiday_policy && subject.holiday_policy !== "inherit" && (
+        <p className="hint">
+          Feriados registrados:{" "}
+          {subject.holiday_policy === "skip"
+            ? "no se dictan clases"
+            : "se mantiene el horario"}
+          .
+        </p>
+      )}
+      {confirming && (
+        <div className="notice">
+          <span>
+            Se quitarán el curso y sus sesiones. Tus actividades se conservarán
+            sin curso.
+          </span>
+          <button
+            className="text-button danger"
+            onClick={() => onDelete(subject.id)}
+          >
+            Eliminar curso
+          </button>
+          <button className="text-button" onClick={() => setConfirming(false)}>
+            Cancelar
+          </button>
+        </div>
+      )}
+      <div className="course-sessions">
+        {classes
+          .sort(
+            (a, b) =>
+              a.day_of_week - b.day_of_week ||
+              a.start_time.localeCompare(b.start_time),
+          )
+          .map((c) => (
+            <div
+              className={`session-row ${c.session_type === "laboratory" ? "lab" : ""}`}
+              key={c.id}
+            >
+              <span className="session-kind">
+                {c.session_type === "laboratory" && <FlaskConical size={14} />}{" "}
+                {SESSION_LABELS[c.session_type || "theory"]}
               </span>
-            ))
-          )}
-        </div>
+              <strong>{DAYS[c.day_of_week - 1]}</strong>
+              <time>
+                {c.start_time} – {c.end_time}
+              </time>
+              <span>
+                {c.classroom ||
+                  (c.session_type === "laboratory"
+                    ? null
+                    : subject.classroom) ||
+                  "Aula por confirmar"}
+              </span>
+              <span>
+                {c.professor ||
+                  (c.session_type === "laboratory"
+                    ? "Docente por confirmar"
+                    : subject.professor) ||
+                  "Docente por confirmar"}
+              </span>
+            </div>
+          ))}
+        {!classes.length && (
+          <p className="hint">
+            Sin sesiones. Edita el curso para añadir teoría o laboratorio.
+          </p>
+        )}
       </div>
-    </div>
+      <SessionExceptions classes={classes} subject={subject} />
+    </article>
   );
 }

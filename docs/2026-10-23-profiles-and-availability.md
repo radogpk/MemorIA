@@ -1,0 +1,13 @@
+# Selección de perfil y disponibilidad compartida
+
+La app empieza por elegir Gerardo (Principito) o Norely (Evebebé). Norely conserva el identificador de su perfil; Evebebé es su apodo. No usa el perfil guardado de la versión anterior para entrar automáticamente. «Cambiar perfil» desmonta la pantalla y sus formularios, vuelve a la selección y abre Mi día al entrar de nuevo. Los datos y la cola de guardado se conservan.
+
+Las invitaciones se crean y editan en `/together/plan`: día y duración, agendas de ambos, horas libres comunes y detalles de la propuesta. Las sesiones de teoría, laboratorio y práctica se consultan según su curso y propietario. Las actividades que atraviesan medianoche también se incluyen en el siguiente día. Las propuestas pendientes reservan ambas agendas hasta rechazarlas, cancelarlas o eliminarlas; aceptar conserva la reserva y activa la cita en la agenda del destinatario.
+
+Una tarea sin fin registrado es un recordatorio y no bloquea una hora. Una reunión, examen o actividad personal sin fin reserva una hora estimada y lo indica. Las actividades de todo el día bloquean su intervalo. Las completadas o canceladas no bloquean. Las horas libres se calculan únicamente sobre los datos registrados.
+
+Cliente y API reutilizan el cálculo de cruces. SQLite lo ejecuta dentro de `BEGIN IMMEDIATE`, por lo que dos propuestas simultáneas sobre la misma hora no pueden guardarse ambas. La aceptación comprueba de nuevo el horario: si apareció un compromiso, muestra el cruce y permite rechazar. Editar una propuesta excluye su propia reserva del cálculo. Se conservan las invitaciones y actividades anteriores sin migración destructiva.
+
+La conexión remota Supabase sigue sin estar verificada. Allí la validación de la API precede a la RPC y no constituye una garantía transaccional contra escrituras concurrentes de otros clientes; la garantía comprobada corresponde al servidor SQLite local. Las invitaciones siguen siendo internas, sin notificaciones push.
+
+Verificación: 67 pruebas automatizadas, TypeScript y compilación de producción aprobados. En navegador se comprobó la selección previa a la agenda, cambio entre ambos perfiles, cambio de día, rechazo de una hora que cruza con un laboratorio, envío y aceptación de una cita a las 12:00 de Perú, y su persistencia como 17:00–18:00 UTC. La API también rechazó aceptar una invitación cancelada y admitió una respuesta con fechas ISO equivalentes en otra representación de zona horaria. Se retiraron únicamente los registros temporales creados para estas comprobaciones. Capturas a 1440, 678 y 390 píxeles incluyen entrada, agendas desplegadas, selección de hora, invitaciones cerradas y error de cruce.

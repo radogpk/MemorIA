@@ -1,134 +1,151 @@
-'use client';
-
-import React from 'react';
-import { Plus, Trash2, Clock } from 'lucide-react';
-
-export interface ScheduleSlot {
-  day_of_week: number;
-  start_time: string;
-  end_time: string;
+"use client";
+import { Plus, Trash2 } from "lucide-react";
+import { ScheduleInput } from "@/lib/storage/store";
+export interface ScheduleSlot extends ScheduleInput {
   classroom?: string;
+  professor?: string;
 }
-
-interface Props {
+export const DAYS = [
+  "Lunes",
+  "Martes",
+  "Miércoles",
+  "Jueves",
+  "Viernes",
+  "Sábado",
+  "Domingo",
+];
+export const SESSION_LABELS = {
+  theory: "Teoría",
+  laboratory: "Laboratorio",
+  practice: "Práctica",
+};
+export function ClassScheduleSelector({
+  slots,
+  onChange,
+}: {
   slots: ScheduleSlot[];
   onChange: (slots: ScheduleSlot[]) => void;
-}
-
-const DAYS = [
-  { id: 1, name: 'Lunes' },
-  { id: 2, name: 'Martes' },
-  { id: 3, name: 'Miércoles' },
-  { id: 4, name: 'Jueves' },
-  { id: 5, name: 'Viernes' },
-  { id: 6, name: 'Sábado' },
-  { id: 7, name: 'Domingo' },
-];
-
-export function ClassScheduleSelector({ slots, onChange }: Props) {
-  const addSlot = () => {
-    onChange([
-      ...slots,
-      {
-        day_of_week: 1,
-        start_time: '08:00',
-        end_time: '10:00',
-        classroom: '',
-      },
-    ]);
-  };
-
-  const removeSlot = (index: number) => {
-    onChange(slots.filter((_, i) => i !== index));
-  };
-
-  const updateSlot = (index: number, updates: Partial<ScheduleSlot>) => {
-    onChange(
-      slots.map((slot, i) => (i === index ? { ...slot, ...updates } : slot))
-    );
-  };
-
+}) {
+  const update = (i: number, data: Partial<ScheduleSlot>) =>
+    onChange(slots.map((s, index) => (i === index ? { ...s, ...data } : s)));
   return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <label className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-          Horario Semanal de Clases
-        </label>
+    <section className="schedule-editor">
+      <div className="section-heading">
+        <h3>Sesiones del curso</h3>
         <button
+          className="button secondary small"
           type="button"
-          onClick={addSlot}
-          className="flex items-center gap-1 rounded bg-slate-800 px-2 py-1 text-xs text-blue-400 hover:bg-slate-700 transition"
+          onClick={() =>
+            onChange([
+              ...slots,
+              {
+                day_of_week: 1,
+                start_time: "08:00",
+                end_time: "10:00",
+                session_type: "theory",
+                classroom: "",
+                professor: "",
+              },
+            ])
+          }
         >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Agregar Día/Hora</span>
+          <Plus size={16} /> Añadir sesión
         </button>
       </div>
-
-      {slots.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-slate-800 p-3 text-center text-xs text-slate-500">
-          No has añadido horarios fijos aún. Agrega los días en que tomas esta clase.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {slots.map((slot, index) => (
-            <div
-              key={index}
-              className="flex flex-wrap items-center gap-2 rounded-lg border border-slate-800 bg-slate-900/60 p-2 text-xs"
-            >
-              {/* Day selector */}
+      <p className="hint">
+        Añade teoría y, si corresponde, laboratorios o prácticas. Cada sesión
+        tiene su propio horario, aula y docente.
+      </p>
+      {slots.map((s, i) => (
+        <fieldset className="schedule-slot" key={i}>
+          <legend>Sesión {i + 1}</legend>
+          <div className="form-grid">
+            <label>
+              Tipo
               <select
-                value={slot.day_of_week}
+                value={s.session_type || "theory"}
                 onChange={(e) =>
-                  updateSlot(index, { day_of_week: Number(e.target.value) })
+                  update(i, {
+                    session_type: e.target
+                      .value as ScheduleSlot["session_type"],
+                  })
                 }
-                className="rounded border border-slate-700 bg-slate-800 px-2 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500"
               >
-                {DAYS.map((d) => (
-                  <option key={d.id} value={d.id}>
-                    {d.name}
+                {Object.entries(SESSION_LABELS).map(([id, label]) => (
+                  <option value={id} key={id}>
+                    {label}
                   </option>
                 ))}
               </select>
-
-              {/* Start Time */}
-              <div className="flex items-center gap-1">
-                <Clock className="h-3.5 w-3.5 text-slate-500" />
-                <input
-                  type="time"
-                  value={slot.start_time}
-                  onChange={(e) => updateSlot(index, { start_time: e.target.value })}
-                  className="rounded border border-slate-700 bg-slate-800 px-1.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500"
-                />
-                <span className="text-slate-500">a</span>
-                <input
-                  type="time"
-                  value={slot.end_time}
-                  onChange={(e) => updateSlot(index, { end_time: e.target.value })}
-                  className="rounded border border-slate-700 bg-slate-800 px-1.5 py-1 text-slate-200 focus:outline-none focus:border-blue-500"
-                />
-              </div>
-
-              {/* Specific classroom override */}
-              <input
-                type="text"
-                placeholder="Aula (opcional)"
-                value={slot.classroom || ''}
-                onChange={(e) => updateSlot(index, { classroom: e.target.value })}
-                className="w-24 rounded border border-slate-700 bg-slate-800 px-2 py-1 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-blue-500"
-              />
-
-              <button
-                type="button"
-                onClick={() => removeSlot(index)}
-                className="ml-auto rounded p-1 text-slate-500 hover:text-red-400 transition"
-                title="Eliminar franja"
+            </label>
+            <label>
+              Día
+              <select
+                value={s.day_of_week}
+                onChange={(e) => update(i, { day_of_week: +e.target.value })}
               >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
-          ))}
-        </div>
+                {DAYS.map((d, j) => (
+                  <option value={j + 1} key={d}>
+                    {d}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Inicio
+              <input
+                type="time"
+                name={`slot_${i}_start`}
+                required
+                value={s.start_time}
+                onChange={(e) => update(i, { start_time: e.target.value })}
+              />
+            </label>
+            <label>
+              Fin
+              <input
+                type="time"
+                name={`slot_${i}_end`}
+                required
+                value={s.end_time}
+                onChange={(e) => update(i, { end_time: e.target.value })}
+              />
+            </label>
+            <label>
+              Aula de esta sesión
+              <input
+                value={s.classroom || ""}
+                placeholder="Usar aula del curso"
+                onChange={(e) => update(i, { classroom: e.target.value })}
+              />
+            </label>
+            <label>
+              Docente de esta sesión
+              <input
+                value={s.professor || ""}
+                placeholder={
+                  s.session_type === "laboratory"
+                    ? "Por confirmar"
+                    : "Usar docente del curso"
+                }
+                onChange={(e) => update(i, { professor: e.target.value })}
+              />
+            </label>
+          </div>
+          <button
+            className="text-button danger"
+            type="button"
+            onClick={() => onChange(slots.filter((_, j) => i !== j))}
+          >
+            <Trash2 size={15} /> Quitar sesión
+          </button>
+        </fieldset>
+      ))}
+      {!slots.length && (
+        <p className="empty-inline">
+          Puedes guardar el curso ahora y añadir sus sesiones después.
+        </p>
       )}
-    </div>
+    </section>
   );
 }

@@ -5,9 +5,11 @@ import {
   eachDayOfInterval,
   isSameDay,
   areIntervalsOverlapping,
-} from 'date-fns';
-import { RecurrentClass, Activity } from '@/types/database.types';
-import { CalendarEvent } from './types';
+  format,
+} from "date-fns";
+import { RecurrentClass, Activity, UserProfile } from "@/types/database.types";
+import { CalendarEvent } from "./types";
+import { classOccurrence } from "./academic";
 
 /**
  * Projects recurring classes into concrete dates within a given date range.
@@ -16,7 +18,8 @@ import { CalendarEvent } from './types';
 export function projectRecurrentClassesForRange(
   recurrentClasses: RecurrentClass[],
   rangeStart: Date,
-  rangeEnd: Date
+  rangeEnd: Date,
+  profiles: UserProfile[] = [],
 ): CalendarEvent[] {
   const daysInRange = eachDayOfInterval({
     start: startOfDay(rangeStart),
@@ -30,11 +33,22 @@ export function projectRecurrentClassesForRange(
     const jsDay = day.getDay();
     const dayOfWeek = jsDay === 0 ? 7 : jsDay;
 
-    const matchingClasses = recurrentClasses.filter((c) => c.day_of_week === dayOfWeek);
+    const matchingClasses = recurrentClasses.filter(
+      (c) => c.day_of_week === dayOfWeek && c.subject?.is_active !== false,
+    );
 
     for (const rc of matchingClasses) {
-      const [startH, startM] = rc.start_time.split(':').map(Number);
-      const [endH, endM] = rc.end_time.split(':').map(Number);
+      const dayKey = format(day, "yyyy-MM-dd");
+      const occurrence = classOccurrence(
+        rc,
+        dayKey,
+        profiles.find(
+          (p) => p.id === (rc.profile_id || rc.subject?.profile_id),
+        ),
+      );
+      if (!occurrence) continue;
+      const [startH, startM] = occurrence.start_time.split(":").map(Number);
+      const [endH, endM] = occurrence.end_time.split(":").map(Number);
 
       const eventStart = new Date(day);
       eventStart.setHours(startH, startM, 0, 0);
@@ -42,20 +56,31 @@ export function projectRecurrentClassesForRange(
       const eventEnd = new Date(day);
       eventEnd.setHours(endH, endM, 0, 0);
 
-      const subjectName = rc.subject?.name || 'Clase';
-      const color = rc.subject?.color || '#3b82f6';
+      const subjectName = rc.subject?.name || "Clase";
+      const color = rc.subject?.color || "#3b82f6";
 
       projectedEvents.push({
-        id: `class-${rc.id}-${day.toISOString().slice(0, 10)}`,
-        title: subjectName,
-        description: rc.classroom ? `Aula: ${rc.classroom}` : undefined,
+        id: `class-${rc.id}-${dayKey}`,
+        title:
+          rc.session_type === "laboratory"
+            ? `${subjectName} · Laboratorio`
+            : rc.session_type === "practice"
+              ? `${subjectName} · Práctica`
+              : subjectName,
+        description:
+          [
+            occurrence.classroom ? `Aula: ${occurrence.classroom}` : "",
+            rc.exceptions?.find((e) => e.date === dayKey)?.note,
+          ]
+            .filter(Boolean)
+            .join(" · ") || undefined,
         start: eventStart,
         end: eventEnd,
         allDay: false,
-        type: 'class',
+        type: "class",
         subject: rc.subject,
-        classroom: rc.classroom || rc.subject?.classroom || null,
-        professor: rc.subject?.professor || null,
+        classroom: occurrence.classroom,
+        professor: occurrence.professor,
         isRecurrent: true,
         sourceRecurrentClass: rc,
         profileId: rc.profile_id || rc.subject?.profile_id || null,
@@ -76,12 +101,17 @@ export interface CollisionInfo {
  */
 export function detectCollisions(
   activities: Activity[],
-  projectedClasses: CalendarEvent[]
+  projectedClasses: CalendarEvent[],
 ): Record<string, CollisionInfo> {
   const collisions: Record<string, CollisionInfo> = {};
 
   for (const activity of activities) {
-    if (activity.is_all_day || !activity.end_datetime) {
+    if (
+      activity.status === "cancelled" ||
+      activity.status === "completed" ||
+      activity.is_all_day ||
+      !activity.end_datetime
+    ) {
       continue;
     }
 
@@ -92,6 +122,14 @@ export function detectCollisions(
 
     // Check collision with projected classes
     for (const pClass of projectedClasses) {
+      if (
+        (!activity.is_shared ||
+          (activity.invitation && activity.invitation.status !== "accepted")) &&
+        activity.profile_id &&
+        pClass.profileId &&
+        activity.profile_id !== pClass.profileId
+      )
+        continue;
       const classInterval = {
         start: pClass.start,
         end: pClass.end,
@@ -118,7 +156,7 @@ export function detectCollisions(
  */
 export function formatActivitiesToCalendarEvents(
   activities: Activity[],
-  collisions: Record<string, CollisionInfo> = {}
+  collisions: Record<string, CollisionInfo> = {},
 ): CalendarEvent[] {
   return activities.map((act) => {
     const start = new Date(act.start_datetime);

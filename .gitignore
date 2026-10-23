@@ -38,3 +38,8 @@ next-env.d.ts
 
 .vercel
 .env*
+!.env.example
+/data/
+/.impeccable/
+/.taste-skill/
+/.taste-skill/inspect/

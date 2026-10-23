@@ -1,58 +1,105 @@
-'use client';
-
-import React, { useState } from 'react';
-import Link from 'next/link';
-import { Sparkles, Plus, Calendar, BookOpen, CheckSquare } from 'lucide-react';
-import { QuickAddModal } from '@/components/ai/QuickAddModal';
-import { LiveStatusBadge } from '@/components/dashboard/LiveStatusBadge';
-import { ProfileSwitcher } from '@/components/layout/ProfileSwitcher';
-
+"use client";
+import { useState, useEffect } from "react";
+import { usePathname } from "next/navigation";
+import Link from "next/link";
+import { PenLine, CloudCheck, CloudOff, RefreshCw } from "lucide-react";
+import { useMemoria } from "@/lib/storage/store";
+import { ProfileSwitcher } from "./ProfileSwitcher";
+import { QuickAddModal } from "@/components/ai/QuickAddModal";
 export function AppHeader() {
-  const [isAiOpen, setIsAiOpen] = useState(false);
-
+  const [open, setOpen] = useState(false);
+  const path = usePathname();
+  const {
+    syncStatus,
+    syncError,
+    engine,
+    pendingCount,
+    retrySync,
+    hasRejectedChange,
+    discardRejectedChange,
+  } = useMemoria();
+  useEffect(() => {
+    const trigger = () => setOpen(true);
+    const shortcut = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        setOpen((v) => !v);
+      }
+    };
+    window.addEventListener("memoria:quick-add", trigger);
+    window.addEventListener("keydown", shortcut);
+    return () => {
+      window.removeEventListener("memoria:quick-add", trigger);
+      window.removeEventListener("keydown", shortcut);
+    };
+  }, []);
+  const status =
+    syncStatus === "saved"
+      ? engine === "sqlite"
+        ? "Guardado en servidor local"
+        : "Sincronizado en la nube"
+      : syncStatus === "syncing"
+        ? `Guardando${pendingCount ? ` ${pendingCount} cambio(s)` : ""}…`
+        : syncStatus === "loading"
+          ? "Conectando…"
+          : "Cambios en este dispositivo";
   return (
     <>
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-slate-800/80 bg-[#0c121e]/90 px-4 backdrop-blur-md">
-        <div className="flex items-center gap-3">
-          <Link href="/calendar" className="flex items-center gap-2 font-bold text-lg tracking-tight">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-tr from-blue-600 to-indigo-500 text-white shadow-md shadow-blue-500/20">
-              m
-            </span>
-            <span className="bg-gradient-to-r from-blue-400 to-indigo-300 bg-clip-text text-transparent">
-              memor<span className="font-extrabold text-blue-400">IA</span>
-            </span>
+      <header className="app-header">
+        <div className="header-context">
+          <Link className="mobile-brand" href="/today">
+            memorIA
           </Link>
-          <span className="hidden sm:inline-block rounded-full bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-400 border border-blue-500/20">
-            Duo 💖
+          <span className="route-title">
+            {path === "/today"
+              ? "Tu espacio académico"
+              : path === "/calendar"
+                ? "Agenda"
+                : path === "/subjects"
+                  ? "Cursos y sesiones"
+                  : path.startsWith("/together")
+                    ? "Espacio compartido"
+                    : "Pendientes"}
           </span>
         </div>
-
-        <div className="flex items-center gap-2">
-          {/* Profile Switcher */}
-          <ProfileSwitcher />
-
-          {/* Live Activity Status badge */}
-          <div className="hidden sm:block">
-            <LiveStatusBadge />
-          </div>
-
-          {/* Quick-Add button with memorIA AI */}
-          <button
-            onClick={() => setIsAiOpen(true)}
-            className="flex items-center gap-1.5 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 px-3 py-1.5 text-xs font-medium text-white shadow-sm hover:from-blue-500 hover:to-indigo-500 transition active:scale-95"
+        <div className="header-controls">
+          <Link
+            href="/settings"
+            aria-label="Ver estado del guardado y respaldos"
+            className={`save-status ${syncStatus === "error" ? "has-error" : ""}`}
+            title={status}
           >
-            <Sparkles className="h-3.5 w-3.5 animate-pulse text-yellow-300" />
-            <span className="hidden xs:inline">+ memorIA</span>
-            <span className="xs:hidden">IA</span>
-            <kbd className="hidden md:inline-block rounded bg-blue-900/50 px-1.5 py-0.5 text-[10px] text-blue-200 ml-1">
-              Ctrl+K
-            </kbd>
+            {syncStatus === "saved" ? (
+              <CloudCheck size={15} />
+            ) : syncStatus === "error" || syncStatus === "offline" ? (
+              <CloudOff size={15} />
+            ) : (
+              <RefreshCw size={15} />
+            )}
+            <span aria-live="polite">{status}</span>
+          </Link>
+          <ProfileSwitcher />
+          <button className="button small" onClick={() => setOpen(true)}>
+            <PenLine size={17} />
+            <span>Anotar</span>
+            <kbd>Ctrl K</kbd>
           </button>
         </div>
       </header>
-
-      {/* Global AI Quick-Add Modal */}
-      <QuickAddModal isOpen={isAiOpen} onClose={() => setIsAiOpen(false)} />
+      {syncError && (
+        <div className="sync-notice" role="alert">
+          <span>{syncError}</span>
+          <button className="text-button" onClick={() => void retrySync()}>
+            Reintentar
+          </button>
+          {hasRejectedChange && (
+            <button className="text-button" onClick={discardRejectedChange}>
+              Descartar cambio rechazado y recargar
+            </button>
+          )}
+        </div>
+      )}
+      <QuickAddModal isOpen={open} onClose={() => setOpen(false)} />
     </>
   );
 }
