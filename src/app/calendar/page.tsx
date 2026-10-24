@@ -1,38 +1,44 @@
 "use client";
-
-import React, { useState, useMemo, useEffect } from "react";
-import { useMemoria } from "@/lib/storage/store";
-import { CalendarViewMode, CalendarEvent } from "@/lib/calendar/types";
-import { GERARDO_PROFILE_ID } from "@/lib/supabase/data";
-import { CalendarHeader } from "@/components/calendar/CalendarHeader";
-import { CalendarFilterBar } from "@/components/calendar/CalendarFilterBar";
-import { WeekView } from "@/components/calendar/WeekView";
-import { DayView } from "@/components/calendar/DayView";
-import { MonthView } from "@/components/calendar/MonthView";
-import { ActivityModal } from "@/components/tasks/ActivityModal";
-import { openQuickAdd } from "@/components/ai/QuickAddModal";
-import { isVisibleActivity } from "@/lib/storage/model";
-import { SmartStudyPlannerModal } from "@/components/calendar/SmartStudyPlannerModal";
+import { useState, useMemo, useEffect } from "react";
 import {
-  generateIcsCalendarContent,
-  downloadIcsFile,
-} from "@/lib/calendar/ics-export";
+  addDays,
+  addWeeks,
+  addMonths,
+  startOfWeek,
+  endOfWeek,
+  startOfMonth,
+  endOfMonth,
+} from "date-fns";
+import { AlertTriangle } from "lucide-react";
+import { useMemoria } from "@/lib/storage/store";
+import type { CalendarViewMode, CalendarEvent } from "@/lib/calendar/types";
+import type { Activity } from "@/types/database.types";
+import { isVisibleActivity } from "@/lib/storage/model";
+import { validDay } from "@/lib/calendar/academic";
+import {
+  calendarDate,
+  calendarDayKey,
+  eventDayKey,
+  fallsOnDay,
+} from "@/lib/calendar/presentation";
 import {
   projectRecurrentClassesForRange,
   detectCollisions,
   formatActivitiesToCalendarEvents,
 } from "@/lib/calendar/projection";
 import {
-  startOfWeek,
-  endOfWeek,
-  startOfMonth,
-  endOfMonth,
-  addDays,
-  addWeeks,
-  addMonths,
-} from "date-fns";
-import { Activity } from "@/types/database.types";
-import { AlertTriangle } from "lucide-react";
+  generateIcsCalendarContent,
+  downloadIcsFile,
+} from "@/lib/calendar/ics-export";
+import { CalendarHeader } from "@/components/calendar/CalendarHeader";
+import { AgendaView } from "@/components/calendar/AgendaView";
+import { WeekView } from "@/components/calendar/WeekView";
+import { DayView } from "@/components/calendar/DayView";
+import { MonthView } from "@/components/calendar/MonthView";
+import { ActivityModal } from "@/components/tasks/ActivityModal";
+import { EventDetailsModal } from "@/components/calendar/EventDetailsModal";
+import { SmartStudyPlannerModal } from "@/components/calendar/SmartStudyPlannerModal";
+import { openQuickAdd } from "@/components/ai/QuickAddModal";
 
 export default function CalendarPage() {
   const {
@@ -44,290 +50,298 @@ export default function CalendarPage() {
     viewMode: duoMode,
     activeProfile,
     partnerProfile,
+    isLoaded,
+    syncStatus,
   } = useMemoria();
-
-  const [currentDate, setCurrentDate] = useState<Date>(new Date());
-  const [viewMode, setViewMode] = useState<CalendarViewMode>("week");
+  const [currentDate, setCurrentDate] = useState(calendarDate);
+  const [viewMode, setViewMode] = useState<CalendarViewMode>("day");
+  const [compact, setCompact] = useState(true);
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(
     null,
   );
   const [selectedType, setSelectedType] = useState<string | null>(null);
-
-  // Modals state
-  const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
+  const [adding, setAdding] = useState(false);
   const [selectedSlot, setSelectedSlot] = useState<{
     date: Date;
     hour: number;
   } | null>(null);
-  const [editingActivity, setEditingActivity] = useState<Activity | null>(null);
-  const [isStudyPlannerOpen, setIsStudyPlannerOpen] = useState(false);
-
+  const [editing, setEditing] = useState<Activity | null>(null);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null,
+  );
+  const [study, setStudy] = useState(false);
   useEffect(() => {
-    if (window.matchMedia("(max-width: 600px)").matches) setViewMode("day");
+    const media = window.matchMedia("(max-width: 850px)");
+    const adapt = () => setCompact(media.matches);
+    adapt();
+    const day = new URLSearchParams(window.location.search).get("day");
+    if (day && validDay(day)) setCurrentDate(new Date(`${day}T12:00:00`));
+    else if (!media.matches) setViewMode("week");
+    media.addEventListener("change", adapt);
+    return () => media.removeEventListener("change", adapt);
   }, []);
+  useEffect(() => setSelectedSubjectId(null), [activeProfile.id, duoMode]);
   useEffect(() => {
-    setSelectedSubjectId(null);
-  }, [activeProfile.id, duoMode]);
-
-  // Date range determination based on view mode
-  const { rangeStart, rangeEnd } = useMemo(() => {
-    if (viewMode === "day") {
-      const start = new Date(currentDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(currentDate);
-      end.setHours(23, 59, 59, 999);
-      return { rangeStart: start, rangeEnd: end };
-    } else if (viewMode === "month") {
-      const start = startOfWeek(startOfMonth(currentDate), { weekStartsOn: 1 });
-      const end = endOfWeek(endOfMonth(currentDate), { weekStartsOn: 1 });
-      return { rangeStart: start, rangeEnd: end };
-    } else {
-      // 'week'
-      const start = startOfWeek(currentDate, { weekStartsOn: 1 });
-      const end = endOfWeek(currentDate, { weekStartsOn: 1 });
-      return { rangeStart: start, rangeEnd: end };
-    }
-  }, [currentDate, viewMode]);
-
-  // Project recurrent classes into active range
-  const projectedClasses = useMemo(() => {
-    return projectRecurrentClassesForRange(
-      recurrentClasses,
+    const addActivity = () => {
+      setEditing(null);
+      setSelectedSlot(null);
+      setAdding(true);
+    };
+    window.addEventListener("memoria:add-calendar-activity", addActivity);
+    return () =>
+      window.removeEventListener("memoria:add-calendar-activity", addActivity);
+  }, []);
+  const { rangeStart, rangeEnd } = useMemo(
+    () => ({
+      rangeStart: startOfWeek(
+        viewMode === "month" ? startOfMonth(currentDate) : currentDate,
+        { weekStartsOn: 1 },
+      ),
+      rangeEnd: endOfWeek(
+        viewMode === "month" ? endOfMonth(currentDate) : currentDate,
+        { weekStartsOn: 1 },
+      ),
+    }),
+    [currentDate, viewMode],
+  );
+  const projected = useMemo(
+    () =>
+      projectRecurrentClassesForRange(
+        recurrentClasses,
+        rangeStart,
+        rangeEnd,
+        profiles,
+      ),
+    [recurrentClasses, rangeStart, rangeEnd, profiles],
+  );
+  const visibleActivities = useMemo(
+    () =>
+      activities.filter(
+        (a) =>
+          a.status !== "cancelled" &&
+          a.invitation?.status !== "declined" &&
+          (duoMode === "both"
+            ? !a.invitation ||
+              a.invitation.status === "accepted" ||
+              a.profile_id === activeProfile.id
+            : isVisibleActivity(
+                a,
+                duoMode === "partner" && partnerProfile
+                  ? partnerProfile.id
+                  : activeProfile.id,
+              )),
+      ),
+    [activities, duoMode, activeProfile.id, partnerProfile],
+  );
+  const collisions = useMemo(
+    () => detectCollisions(visibleActivities, projected),
+    [visibleActivities, projected],
+  );
+  const allEvents = useMemo(
+    () =>
+      [
+        ...projected,
+        ...formatActivitiesToCalendarEvents(visibleActivities, collisions),
+      ]
+        .filter((event) => {
+          if (
+            eventDayKey(new Date(+event.end - 1)) <
+              calendarDayKey(rangeStart) ||
+            eventDayKey(event.start) > calendarDayKey(rangeEnd)
+          )
+            return false;
+          if (selectedSubjectId && event.subject?.id !== selectedSubjectId)
+            return false;
+          if (
+            selectedType &&
+            (selectedType === "laboratory"
+              ? event.sourceRecurrentClass?.session_type !== "laboratory"
+              : event.type !== selectedType)
+          )
+            return false;
+          const owner =
+            duoMode === "partner" && partnerProfile
+              ? partnerProfile.id
+              : activeProfile.id;
+          return (
+            duoMode === "both" || event.profileId === owner || event.isShared
+          );
+        })
+        .map((event) => ({
+          ...event,
+          profileName: event.isShared
+            ? "Ambos"
+            : profiles.find((p) => p.id === event.profileId)?.name,
+        })),
+    [
+      projected,
+      visibleActivities,
+      collisions,
       rangeStart,
       rangeEnd,
+      selectedSubjectId,
+      selectedType,
+      duoMode,
+      activeProfile.id,
+      partnerProfile,
       profiles,
+    ],
+  );
+  const dailyEvents = allEvents.filter((event) =>
+    fallsOnDay(event, currentDate),
+  );
+  const visibleSubjects = subjects.filter(
+    (s) =>
+      s.is_active &&
+      (duoMode === "both" ||
+        s.profile_id ===
+          (duoMode === "partner" && partnerProfile
+            ? partnerProfile.id
+            : activeProfile.id)),
+  );
+  const move = (direction: number) =>
+    setCurrentDate((date) =>
+      viewMode === "month"
+        ? addMonths(date, direction)
+        : addWeeks(date, direction),
     );
-  }, [recurrentClasses, rangeStart, rangeEnd, profiles]);
-
-  // Detect collisions — only for relevant profile's activities
-  const collisions = useMemo(() => {
-    const relevantActivities = activities.filter((a) => {
-      const actProfile =
-        a.profile_id || a.subject?.profile_id || GERARDO_PROFILE_ID;
-      if (duoMode === "mine") return isVisibleActivity(a, activeProfile.id);
-      if (duoMode === "partner" && partnerProfile)
-        return isVisibleActivity(a, partnerProfile.id);
-      return true; // 'both'
-    });
-    return detectCollisions(relevantActivities, projectedClasses);
-  }, [activities, projectedClasses, duoMode, activeProfile, partnerProfile]);
-
-  // Combine projected classes and activities into calendar events
-  const allEvents: CalendarEvent[] = useMemo(() => {
-    const visible = activities.filter(
-      (a) =>
-        a.status !== "cancelled" &&
-        a.invitation?.status !== "declined" &&
-        (duoMode === "both"
-          ? !a.invitation ||
-            a.invitation.status === "accepted" ||
-            a.profile_id === activeProfile.id
-          : isVisibleActivity(
-              a,
-              duoMode === "partner" && partnerProfile
-                ? partnerProfile.id
-                : activeProfile.id,
-            )),
-    );
-    const formattedActivities = formatActivitiesToCalendarEvents(
-      visible,
-      collisions,
-    );
-    const combined = [...projectedClasses, ...formattedActivities];
-
-    return combined.filter((e) => {
-      if (e.end < rangeStart || e.start > rangeEnd) return false;
-      // Filter by subject
-      if (selectedSubjectId && e.subject?.id !== selectedSubjectId) {
-        return false;
-      }
-      // Filter by type
-      if (
-        selectedType &&
-        (selectedType === "laboratory"
-          ? e.sourceRecurrentClass?.session_type !== "laboratory"
-          : e.type !== selectedType)
-      ) {
-        return false;
-      }
-
-      // Filter by Duo viewMode
-      if (duoMode === "mine") {
-        const eventProfile =
-          e.profileId || e.subject?.profile_id || GERARDO_PROFILE_ID;
-        if (eventProfile !== activeProfile.id && !e.isShared) {
-          return false;
-        }
-      } else if (duoMode === "partner" && partnerProfile) {
-        const eventProfile =
-          e.profileId || e.subject?.profile_id || GERARDO_PROFILE_ID;
-        if (eventProfile !== partnerProfile.id && !e.isShared) {
-          return false;
-        }
-      }
-
-      return true;
-    });
-  }, [
-    projectedClasses,
-    activities,
-    collisions,
-    selectedSubjectId,
-    selectedType,
-    duoMode,
-    activeProfile,
-    partnerProfile,
-  ]);
-
-  // Collision count
-  const collisionCount = Object.keys(collisions).length;
-
-  // Navigation handlers
-  const handlePrev = () => {
-    if (viewMode === "day") setCurrentDate((prev) => addDays(prev, -1));
-    else if (viewMode === "week") setCurrentDate((prev) => addWeeks(prev, -1));
-    else setCurrentDate((prev) => addMonths(prev, -1));
+  const selectDate = (date: Date) => {
+    setCurrentDate(date);
+    setViewMode("day");
   };
-
-  const handleNext = () => {
-    if (viewMode === "day") setCurrentDate((prev) => addDays(prev, 1));
-    else if (viewMode === "week") setCurrentDate((prev) => addWeeks(prev, 1));
-    else setCurrentDate((prev) => addMonths(prev, 1));
-  };
-
-  const handleToday = () => {
-    setCurrentDate(new Date());
-  };
-
-  const handleSlotClick = (date: Date, hour: number) => {
-    setSelectedSlot({ date, hour });
-    setEditingActivity(null);
-    setIsActivityModalOpen(true);
-  };
-
-  const handleSelectEvent = (event: CalendarEvent) => {
-    if (event.sourceActivity) {
-      setEditingActivity(event.sourceActivity);
-      setSelectedSlot(null);
-      setIsActivityModalOpen(true);
-    }
-  };
-
+  const studyEvents = useMemo(
+    () => [
+      ...projectRecurrentClassesForRange(
+        recurrentClasses,
+        calendarDate(),
+        addDays(calendarDate(), 60),
+        profiles,
+      ),
+      ...formatActivitiesToCalendarEvents(activities),
+    ],
+    [recurrentClasses, profiles, activities],
+  );
   return (
-    <div className="flex h-full flex-col overflow-hidden bg-[#090d16]">
-      {/* Calendar Header */}
+    <div
+      className={`calendar-page ${compact ? "compact-calendar" : "wide-calendar"}`}
+    >
       <CalendarHeader
+        currentDate={currentDate}
+        onSelectDate={selectDate}
+        events={allEvents}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
-        currentDate={currentDate}
-        onPrev={handlePrev}
-        onNext={handleNext}
-        onToday={handleToday}
-        onOpenQuickAdd={openQuickAdd}
-        onOpenManualAdd={() => {
-          setEditingActivity(null);
-          setSelectedSlot(null);
-          setIsActivityModalOpen(true);
-        }}
-        onExportIcs={() => {
-          const content = generateIcsCalendarContent(
-            subjects,
-            recurrentClasses.filter((c) =>
-              allEvents.some((e) => e.sourceRecurrentClass?.id === c.id),
-            ),
-            allEvents
-              .filter((e) => e.sourceActivity)
-              .map((e) => e.sourceActivity!),
-            new Date(),
-            profiles,
-          );
-          downloadIcsFile("horario-memoria.ics", content);
-        }}
-        onOpenStudyPlanner={() => setIsStudyPlannerOpen(true)}
-      />
-
-      {/* Filter Bar */}
-      <CalendarFilterBar
-        subjects={subjects.filter((s) => {
-          if (duoMode === "mine")
-            return (s.profile_id || GERARDO_PROFILE_ID) === activeProfile.id;
-          if (duoMode === "partner" && partnerProfile)
-            return (s.profile_id || GERARDO_PROFILE_ID) === partnerProfile.id;
-          return true; // 'both': show all
-        })}
+        onPrev={() => move(-1)}
+        onNext={() => move(1)}
+        onToday={() => selectDate(calendarDate())}
+        subjects={visibleSubjects}
         selectedSubjectId={selectedSubjectId}
         onSelectSubject={setSelectedSubjectId}
         selectedType={selectedType}
         onSelectType={setSelectedType}
+        onOpenStudyPlanner={() => setStudy(true)}
+        onExportIcs={() =>
+          downloadIcsFile(
+            "horario-memoria.ics",
+            generateIcsCalendarContent(
+              subjects,
+              recurrentClasses.filter((c) =>
+                allEvents.some((e) => e.sourceRecurrentClass?.id === c.id),
+              ),
+              allEvents.flatMap((e) =>
+                e.sourceActivity ? [e.sourceActivity] : [],
+              ),
+              new Date(),
+              profiles,
+            ),
+          )
+        }
       />
-
-      {/* Collision alert banner */}
-      {collisionCount > 0 && (
-        <div className="flex items-center gap-2 border-b border-amber-500/20 bg-amber-500/10 px-4 py-1.5 text-xs text-amber-300">
-          <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
-          <span>
-            Tienes <strong>{collisionCount}</strong> actividad(es) con
-            solapamiento de horario frente a tus clases fijas.
-          </span>
-        </div>
+      {Object.keys(collisions).length > 0 && (
+        <p className="calendar-overlap-note" role="status">
+          <AlertTriangle size={16} />
+          Hay compromisos que coinciden. Tócalos para revisar sus horas.
+        </p>
       )}
-
-      {/* Calendar Body Grid */}
-      <div className="flex flex-1 overflow-hidden">
-        {viewMode === "week" && (
-          <WeekView
-            currentDate={currentDate}
-            events={allEvents}
-            onSelectEvent={handleSelectEvent}
-            onSlotClick={handleSlotClick}
-            onToggleTask={toggleActivityStatus}
+      <div className="calendar-body">
+        {!isLoaded || syncStatus === "loading" ? (
+          <div
+            className="loading-skeleton"
+            role="status"
+            aria-label="Cargando tu agenda"
           />
-        )}
-
-        {viewMode === "day" && (
-          <DayView
-            currentDate={currentDate}
-            events={allEvents}
-            onSelectEvent={handleSelectEvent}
-            onSlotClick={handleSlotClick}
-            onToggleTask={toggleActivityStatus}
-          />
-        )}
-
-        {viewMode === "month" && (
+        ) : viewMode === "month" ? (
           <MonthView
             currentDate={currentDate}
             events={allEvents}
-            onSelectDate={(day) => {
-              setCurrentDate(day);
-              setViewMode("day");
+            onSelectDate={selectDate}
+            onSelectEvent={setSelectedEvent}
+          />
+        ) : compact ? (
+          <AgendaView
+            currentDate={currentDate}
+            events={allEvents}
+            week={viewMode === "week"}
+            showOwners={duoMode === "both"}
+            onSelectEvent={setSelectedEvent}
+            onToggleTask={toggleActivityStatus}
+            onClearFilters={
+              selectedSubjectId || selectedType
+                ? () => {
+                    setSelectedSubjectId(null);
+                    setSelectedType(null);
+                  }
+                : undefined
+            }
+            onSelectDate={selectDate}
+          />
+        ) : viewMode === "week" ? (
+          <WeekView
+            currentDate={currentDate}
+            events={allEvents}
+            onSelectEvent={setSelectedEvent}
+            onToggleTask={toggleActivityStatus}
+            onSlotClick={(date, hour) => {
+              setSelectedSlot({ date, hour });
+              setEditing(null);
+              setAdding(true);
             }}
-            onSelectEvent={handleSelectEvent}
+          />
+        ) : (
+          <DayView
+            currentDate={currentDate}
+            events={dailyEvents}
+            onSelectEvent={setSelectedEvent}
+            onToggleTask={toggleActivityStatus}
+            onSlotClick={(date, hour) => {
+              setSelectedSlot({ date, hour });
+              setEditing(null);
+              setAdding(true);
+            }}
           />
         )}
       </div>
-
-      {/* Modals */}
-      <ActivityModal
-        isOpen={isActivityModalOpen}
-        onClose={() => setIsActivityModalOpen(false)}
-        initialDate={selectedSlot?.date}
-        initialHour={selectedSlot?.hour}
-        initialActivity={editingActivity}
+      <EventDetailsModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onEdit={(event) => {
+          setSelectedEvent(null);
+          setEditing(event.sourceActivity!);
+          setAdding(true);
+        }}
       />
-
+      <ActivityModal
+        isOpen={adding}
+        onClose={() => setAdding(false)}
+        initialDate={selectedSlot?.date || currentDate}
+        initialHour={selectedSlot?.hour}
+        initialActivity={editing}
+        onOpenQuickAdd={openQuickAdd}
+      />
       <SmartStudyPlannerModal
-        isOpen={isStudyPlannerOpen}
-        onClose={() => setIsStudyPlannerOpen(false)}
-        busyEvents={[
-          ...projectRecurrentClassesForRange(
-            recurrentClasses,
-            new Date(),
-            addDays(new Date(), 60),
-            profiles,
-          ),
-          ...formatActivitiesToCalendarEvents(activities),
-        ]}
+        isOpen={study}
+        onClose={() => setStudy(false)}
+        busyEvents={studyEvents}
       />
     </div>
   );

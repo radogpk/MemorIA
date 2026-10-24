@@ -10,6 +10,7 @@ import {
 import { RecurrentClass, Activity, UserProfile } from "@/types/database.types";
 import { CalendarEvent } from "./types";
 import { classOccurrence } from "./academic";
+import { localDateTimeToIso } from "@/lib/ai/date-parser";
 
 /**
  * Projects recurring classes into concrete dates within a given date range.
@@ -50,11 +51,12 @@ export function projectRecurrentClassesForRange(
       const [startH, startM] = occurrence.start_time.split(":").map(Number);
       const [endH, endM] = occurrence.end_time.split(":").map(Number);
 
-      const eventStart = new Date(day);
-      eventStart.setHours(startH, startM, 0, 0);
-
-      const eventEnd = new Date(day);
-      eventEnd.setHours(endH, endM, 0, 0);
+      const eventStart = new Date(
+        localDateTimeToIso(`${dayKey}T${occurrence.start_time.slice(0, 5)}`),
+      );
+      const eventEnd = new Date(
+        localDateTimeToIso(`${dayKey}T${occurrence.end_time.slice(0, 5)}`),
+      );
 
       const subjectName = rc.subject?.name || "Clase";
       const color = rc.subject?.color || "#3b82f6";

@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import "./mobile-agenda.css";
 import { MemoriaProvider } from "@/lib/storage/store";
 import { AppShell } from "@/components/layout/AppShell";
 
@@ -18,6 +19,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: "#101b2d",
+  viewportFit: "cover",
 };
 
 export default function RootLayout({

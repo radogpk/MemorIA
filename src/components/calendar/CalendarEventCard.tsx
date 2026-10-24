@@ -1,8 +1,8 @@
 "use client";
 import { CalendarEvent } from "@/lib/calendar/types";
 import { useMemoria } from "@/lib/storage/store";
-import { format } from "date-fns";
 import { Check, MapPin, AlertTriangle } from "lucide-react";
+import { eventTime, isDeadline, agendaKind } from "@/lib/calendar/presentation";
 export function CalendarEventCard({
   event,
   onClick,
@@ -15,17 +15,6 @@ export function CalendarEventCard({
   compact?: boolean;
 }) {
   const { profiles, viewMode } = useMemoria();
-  const type = event.sourceRecurrentClass
-    ? { theory: "Teoría", laboratory: "Laboratorio", practice: "Práctica" }[
-        event.sourceRecurrentClass.session_type || "theory"
-      ]
-    : {
-        class: "Clase",
-        task: "Tarea",
-        exam: "Examen",
-        meeting: "Reunión",
-        personal: "Personal",
-      }[event.type];
   const profile = profiles.find((p) => p.id === event.profileId);
   const color = event.subject?.color || profile?.avatar_color || "#97c7e7";
   return (
@@ -35,14 +24,17 @@ export function CalendarEventCard({
       tabIndex={0}
       onClick={onClick}
       onKeyDown={(e) => {
-        if (e.key === "Enter") onClick?.();
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClick?.();
+        }
       }}
       style={{ backgroundColor: `${color}22` }}
-      aria-label={`${event.title}, ${format(event.start, "HH:mm")}${event.classroom ? `, ${event.classroom}` : ""}`}
+      aria-label={`${event.title}, ${eventTime(event.start)}${event.classroom ? `, ${event.classroom}` : ""}`}
     >
       <div className="event-meta">
         <span className="course-dot" style={{ background: color }} />
-        {type}
+        {agendaKind(event)}
         {event.hasCollision && <AlertTriangle size={12} />}
       </div>
       <strong>
@@ -53,7 +45,8 @@ export function CalendarEventCard({
       {!compact && (
         <>
           <time>
-            {format(event.start, "HH:mm")} – {format(event.end, "HH:mm")}
+            {eventTime(event.start)}
+            {isDeadline(event) ? " · entrega" : ` – ${eventTime(event.end)}`}
           </time>
           {event.classroom && (
             <span className="event-room">

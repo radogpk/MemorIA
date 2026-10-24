@@ -2,12 +2,14 @@
 import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { PenLine, CloudCheck, CloudOff, RefreshCw } from "lucide-react";
+import { Plus, Settings, CloudCheck, CloudOff, RefreshCw } from "lucide-react";
 import { useMemoria } from "@/lib/storage/store";
 import { ProfileSwitcher } from "./ProfileSwitcher";
 import { QuickAddModal } from "@/components/ai/QuickAddModal";
+import { ActivityModal } from "@/components/tasks/ActivityModal";
 export function AppHeader() {
   const [open, setOpen] = useState(false);
+  const [manualOpen, setManualOpen] = useState(false);
   const path = usePathname();
   const {
     syncStatus,
@@ -79,10 +81,30 @@ export function AppHeader() {
             <span aria-live="polite">{status}</span>
           </Link>
           <ProfileSwitcher />
-          <button className="button small" onClick={() => setOpen(true)}>
-            <PenLine size={17} />
-            <span>Anotar</span>
-            <kbd>Ctrl K</kbd>
+          <Link
+            href="/settings"
+            className="icon-button header-settings"
+            aria-label={`Ajustes. ${status}`}
+            title={status}
+          >
+            <Settings size={20} />
+            <span
+              className={`header-sync-dot ${syncStatus === "saved" ? "" : "unsaved"}`}
+              aria-hidden="true"
+            />
+          </Link>
+          <button
+            className="button small global-add"
+            onClick={() =>
+              path === "/calendar"
+                ? window.dispatchEvent(
+                    new Event("memoria:add-calendar-activity"),
+                  )
+                : setManualOpen(true)
+            }
+          >
+            <Plus size={21} />
+            <span>Añadir</span>
           </button>
         </div>
       </header>
@@ -100,6 +122,11 @@ export function AppHeader() {
         </div>
       )}
       <QuickAddModal isOpen={open} onClose={() => setOpen(false)} />
+      <ActivityModal
+        isOpen={manualOpen}
+        onClose={() => setManualOpen(false)}
+        onOpenQuickAdd={() => setOpen(true)}
+      />
     </>
   );
 }

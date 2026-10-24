@@ -1,9 +1,14 @@
 "use client";
+import { ChevronDown } from "lucide-react";
 import { useMemoria } from "@/lib/storage/store";
 export function ProfileSwitcher() {
   const { activeProfile, leaveProfile } = useMemoria();
   return (
-    <div className="active-profile">
+    <button
+      className="active-profile"
+      onClick={leaveProfile}
+      aria-label={`Cambiar perfil. Perfil actual: ${activeProfile.name}`}
+    >
       <span
         className="avatar"
         style={{ background: activeProfile.avatar_color }}
@@ -11,12 +16,11 @@ export function ProfileSwitcher() {
       >
         {activeProfile.name[0]}
       </span>
-      <div>
+      <span className="profile-button-text">
         <strong>{activeProfile.name}</strong>
-        <button className="text-button" onClick={leaveProfile}>
-          Cambiar perfil
-        </button>
-      </div>
-    </div>
+        <small>Cambiar perfil</small>
+      </span>
+      <ChevronDown size={14} />
+    </button>
   );
 }

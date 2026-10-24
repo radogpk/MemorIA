@@ -2,33 +2,41 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
-  Plus,
-  MapPin,
-  ArrowUpRight,
-  Check,
+  ArrowRight,
   CalendarDays,
-  BookOpen,
+  CheckCheck,
+  HeartHandshake,
+  ListTodo,
+  Clock3,
 } from "lucide-react";
+import { addDays, endOfDay, format, startOfDay } from "date-fns";
+import { es } from "date-fns/locale";
 import { useMemoria } from "@/lib/storage/store";
 import {
   projectRecurrentClassesForRange,
   formatActivitiesToCalendarEvents,
 } from "@/lib/calendar/projection";
-import { isVisibleActivity } from "@/lib/storage/model";
+import { isPendingInvitation, isVisibleActivity } from "@/lib/storage/model";
 import {
-  startOfDay,
-  endOfDay,
-  format,
-  isSameDay,
-  differenceInCalendarDays,
-} from "date-fns";
-import { es } from "date-fns/locale";
+  agendaKind,
+  agendaTitle,
+  calendarDate,
+  calendarDayKey,
+  eventTime,
+  eventDayKey,
+  fallsOnDay,
+  isDeadline,
+  sortAgenda,
+} from "@/lib/calendar/presentation";
+import type { CalendarEvent } from "@/lib/calendar/types";
+import type { Activity } from "@/types/database.types";
+import { AgendaEventRow } from "@/components/calendar/AgendaEventRow";
+import { EventDetailsModal } from "@/components/calendar/EventDetailsModal";
 import { ActivityModal } from "@/components/tasks/ActivityModal";
-import { InvitationList } from "@/components/invitations/InvitationList";
+
 export function DailyBriefing({
   onOpenPlanner,
 }: {
-  onOpenQuickAdd: () => void;
   onOpenPlanner: () => void;
 }) {
   const {
@@ -39,261 +47,283 @@ export function DailyBriefing({
     activeProfile,
     toggleActivityStatus,
     isLoaded,
+    syncStatus,
   } = useMemoria();
   const [now, setNow] = useState(new Date());
-  const [add, setAdd] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(
+    null,
+  );
+  const [editing, setEditing] = useState<Activity | null>(null);
   useEffect(() => {
-    const t = setInterval(() => setNow(new Date()), 30000);
-    return () => clearInterval(t);
+    const timer = setInterval(() => setNow(new Date()), 30000);
+    return () => clearInterval(timer);
   }, []);
+  const today = calendarDate(now),
+    dayKey = calendarDayKey(today);
   const mine = activities.filter(
     (a) => isVisibleActivity(a, activeProfile.id) && a.status !== "cancelled",
   );
   const classes = recurrentClasses.filter(
     (c) => c.profile_id === activeProfile.id && c.subject?.is_active !== false,
   );
-  const events = [
+  const events = sortAgenda([
     ...projectRecurrentClassesForRange(
       classes,
-      startOfDay(now),
-      endOfDay(now),
+      startOfDay(today),
+      endOfDay(today),
       profiles,
     ),
     ...formatActivitiesToCalendarEvents(mine).filter((e) =>
-      isSameDay(e.start, now),
+      fallsOnDay(e, today),
     ),
-  ].sort((a, b) => +a.start - +b.start);
+  ]);
+  const remaining = events.filter(
+    (e) =>
+      e.status !== "completed" &&
+      (isDeadline(e) ? e.start >= now : e.end > now),
+  );
+  const current = remaining.find(
+    (e) => !e.allDay && !isDeadline(e) && e.start <= now,
+  );
+  const focus = current || remaining.find((e) => !e.allDay) || remaining[0];
+  const later = remaining.filter((e) => e.id !== focus?.id);
+  const past = events.filter((e) => !remaining.some((r) => r.id === e.id));
+  const tasks = mine.filter(
+    (a) => ["task", "exam"].includes(a.type) && a.status !== "completed",
+  );
+  const overdue = tasks.filter(
+    (a) => eventDayKey(new Date(a.start_datetime)) < dayKey,
+  ).length;
+  const invites = activities.filter(
+    (a) =>
+      isPendingInvitation(a) && a.invitation?.recipient_id === activeProfile.id,
+  );
   const upcoming = mine
     .filter(
-      (a) => a.status !== "completed" && new Date(a.start_datetime) >= now,
+      (a) =>
+        a.status !== "completed" &&
+        a.metadata?.kind !== "work" &&
+        eventDayKey(new Date(a.start_datetime)) > dayKey,
     )
     .sort(
       (a, b) => Date.parse(a.start_datetime) - Date.parse(b.start_datetime),
     );
-  const next = events.find((e) => e.end > now && e.status !== "completed");
-  const inProgress = next && next.start <= now;
-  const pending = mine.filter(
-    (a) => (a.type === "task" || a.type === "exam") && a.status !== "completed",
+  const hasCourses = subjects.some(
+    (s) => s.profile_id === activeProfile.id && s.is_active,
   );
-  const overdue = pending.filter(
-    (a) => new Date(a.start_datetime) < startOfDay(now),
-  ).length;
+  const select = (event: CalendarEvent) =>
+    setSelectedEvent({
+      ...event,
+      profileName: profiles.find((p) => p.id === event.profileId)?.name,
+    });
   return (
-    <div className="page dashboard">
-      <div className="page-heading">
+    <div className="daily-home">
+      <div className="daily-heading">
         <div>
-          <h1>Tu día, {activeProfile.nickname || activeProfile.name}.</h1>
-          <p>
-            {format(now, "EEEE d 'de' MMMM", { locale: es })}. Un paso a la vez.
-          </p>
+          <h1>Tu día</h1>
+          <p>{format(today, "EEEE d 'de' MMMM", { locale: es })}</p>
         </div>
-        <button className="button secondary" onClick={() => setAdd(true)}>
-          <Plus size={18} /> Nueva actividad
-        </button>
+        <Link
+          href={`/calendar?day=${calendarDayKey(addDays(today, 1))}`}
+          className="tomorrow-link"
+        >
+          Mañana <ArrowRight size={16} />
+        </Link>
       </div>
-      {!isLoaded ? (
+      {!isLoaded || syncStatus === "loading" ? (
         <div className="loading-skeleton" aria-label="Cargando tu agenda" />
       ) : (
         <>
-          <div className="day-overview">
-            <div className="next-moment">
-              <h2>
-                {next?.title ||
-                  (events.length
-                    ? "Ya terminaste por hoy."
-                    : "Espacio para lo que importa.")}
-              </h2>
-              {next && (
-                <p className="live-label">
-                  <span className="status-dot" />
-                  {inProgress ? "En este momento" : "Lo siguiente de hoy"}
-                </p>
-              )}
-              <p>
-                {next ? (
-                  <>
-                    {format(next.start, "HH:mm")} – {format(next.end, "HH:mm")}
-                    {next.classroom && <> · {next.classroom}</>}
-                    {next.sourceRecurrentClass?.session_type === "laboratory" &&
-                      " · Laboratorio"}
-                  </>
-                ) : events.length ? (
-                  "Puedes revisar lo pendiente o dejar listo mañana."
-                ) : (
-                  "Añade tus cursos o anota tu próxima actividad."
+          {invites.length > 0 && (
+            <Link href="/together" className="daily-invitation">
+              <HeartHandshake size={21} />
+              <span>
+                <strong>
+                  {invites.length === 1
+                    ? "Tienes una invitación"
+                    : `Tienes ${invites.length} invitaciones`}
+                </strong>
+                <small>Revisa la propuesta y confirma</small>
+              </span>
+              <ArrowRight size={17} />
+            </Link>
+          )}
+          {focus ? (
+            <button
+              className="day-focus"
+              onClick={() => select(focus)}
+              aria-label={`Ver ${agendaTitle(focus)}`}
+            >
+              <div className="day-focus-top">
+                <span
+                  className={current ? "focus-state current" : "focus-state"}
+                >
+                  {current ? (
+                    <>
+                      <span className="status-dot" />
+                      Ahora
+                    </>
+                  ) : (
+                    <>
+                      <Clock3 size={14} />
+                      Lo siguiente
+                    </>
+                  )}
+                </span>
+                {agendaKind(focus) !== agendaTitle(focus) && (
+                  <span>{agendaKind(focus)}</span>
                 )}
-              </p>
-              <Link
-                href={
-                  subjects.some((s) => s.profile_id === activeProfile.id)
-                    ? "/calendar"
-                    : "/subjects"
-                }
-              >
-                {subjects.some((s) => s.profile_id === activeProfile.id)
-                  ? "Abrir calendario"
-                  : "Configurar mis cursos"}{" "}
-                <ArrowUpRight size={17} />
-              </Link>
-            </div>
-            <div className="overview-counts">
-              <div>
-                <strong>{events.length}</strong>
-                <span>
-                  {events.length === 1 ? "actividad hoy" : "actividades hoy"}
-                </span>
               </div>
-              <div>
-                <strong>{pending.length}</strong>
+              <h2>{agendaTitle(focus)}</h2>
+              <div className="day-focus-bottom">
                 <span>
-                  {pending.length === 1 ? "pendiente" : "pendientes"}
-                  {overdue > 0 && <em>{overdue} por revisar</em>}
+                  {focus.allDay
+                    ? "Todo el día"
+                    : `${eventTime(focus.start)}${isDeadline(focus) ? " · entrega" : ` – ${eventTime(focus.end)}`}`}
+                  {focus.classroom && <small>{focus.classroom}</small>}
                 </span>
+                <ArrowRight size={21} />
+              </div>
+            </button>
+          ) : (
+            <div className="day-finished">
+              <CheckCheck size={26} />
+              <div>
+                <h2>
+                  {events.length
+                    ? "Tu agenda de hoy terminó"
+                    : "Hoy tienes espacio libre"}
+                </h2>
+                <p>
+                  {hasCourses
+                    ? "Mira mañana o prepara un plan juntos."
+                    : "Añade tus cursos para ver aquí tus clases."}
+                </p>
               </div>
             </div>
+          )}
+          <div className="daily-shortcuts">
+            <Link href="/tasks">
+              <ListTodo size={18} />
+              <span>
+                {tasks.length
+                  ? `${tasks.length} ${tasks.length === 1 ? "pendiente" : "pendientes"}`
+                  : "Tus pendientes"}
+                {overdue > 0 && <small>{overdue} por revisar</small>}
+              </span>
+              <ArrowRight size={15} />
+            </Link>
+            <Link href="/together/plan">
+              <HeartHandshake size={18} />
+              <span>Planear juntos</span>
+              <ArrowRight size={15} />
+            </Link>
           </div>
-          <div className="dashboard-columns">
-            <section className="day-agenda">
+          <div className="daily-content">
+            <section className="daily-timeline" aria-label="Agenda de hoy">
               <div className="section-heading">
-                <h2>Agenda de hoy</h2>
+                <h2>{later.length ? "El resto del día" : "Tu agenda"}</h2>
                 <span className="hint">Hora de Perú</span>
               </div>
-              {!events.length ? (
-                <div className="empty-state">
-                  <CalendarDays size={30} />
-                  <h3>Un día por escribir</h3>
-                  <p>
-                    Las clases y laboratorios aparecerán aquí según el horario
-                    de tus cursos.
-                  </p>
-                  <Link className="text-button" href="/subjects">
-                    Añadir mis cursos
-                  </Link>
-                </div>
-              ) : (
-                <ol className="agenda-list">
-                  {events.map((e) => (
-                    <li
-                      key={e.id}
-                      className={
-                        e.end < now ? "past" : e.id === next?.id ? "next" : ""
-                      }
-                    >
-                      <time>
-                        {format(e.start, "HH:mm")}
-                        <small>{format(e.end, "HH:mm")}</small>
-                      </time>
-                      <div className="agenda-entry">
-                        <div className="entry-kind">
-                          <span
-                            className="course-dot"
-                            style={{
-                              background:
-                                e.subject?.color || activeProfile.avatar_color,
-                            }}
-                          />
-                          {e.sourceRecurrentClass
-                            ? {
-                                theory: "Teoría",
-                                laboratory: "Laboratorio",
-                                practice: "Práctica",
-                              }[e.sourceRecurrentClass.session_type || "theory"]
-                            : e.isShared
-                              ? "Compartida"
-                              : e.type === "exam"
-                                ? "Examen"
-                                : e.type === "task"
-                                  ? "Tarea"
-                                  : "Personal"}
-                        </div>
-                        <h3>
-                          {e.sourceRecurrentClass
-                            ? e.subject?.name || e.title
-                            : e.title}
-                        </h3>
-                        {(e.classroom || e.professor) && (
-                          <p>
-                            {e.classroom && (
-                              <span>
-                                <MapPin size={13} />
-                                {e.classroom}
-                              </span>
-                            )}
-                            {e.professor && <span>{e.professor}</span>}
-                          </p>
-                        )}
-                      </div>
-                      {e.type === "task" && (
-                        <button
-                          className={`task-check ${e.status === "completed" ? "checked" : ""}`}
-                          aria-label={
-                            e.status === "completed"
-                              ? `Marcar pendiente: ${e.title}`
-                              : `Completar: ${e.title}`
-                          }
-                          onClick={() => toggleActivityStatus(e.id)}
-                        >
-                          {e.status === "completed" && <Check size={17} />}
-                        </button>
-                      )}
-                    </li>
+              {later.length > 0 && (
+                <ol className="agenda-events">
+                  {later.map((event) => (
+                    <AgendaEventRow
+                      key={event.id}
+                      event={event}
+                      onSelect={select}
+                      onToggleTask={toggleActivityStatus}
+                      now={now}
+                    />
                   ))}
                 </ol>
               )}
+              {!later.length && !past.length && (
+                <div className="daily-quiet">
+                  <CalendarDays size={23} />
+                  <p>
+                    {focus
+                      ? "Este es tu único compromiso de hoy."
+                      : "Las actividades que añadas aparecerán aquí."}
+                  </p>
+                  <Link href={hasCourses ? "/calendar" : "/subjects"}>
+                    {hasCourses ? "Ver la semana" : "Añadir mis cursos"}
+                    <ArrowRight size={15} />
+                  </Link>
+                </div>
+              )}
+              {past.length > 0 && (
+                <details className="past-agenda">
+                  <summary>
+                    Ver lo que ya pasó <span>{past.length}</span>
+                  </summary>
+                  <ol className="agenda-events">
+                    {past.map((event) => (
+                      <AgendaEventRow
+                        key={event.id}
+                        event={event}
+                        onSelect={select}
+                        onToggleTask={toggleActivityStatus}
+                        now={now}
+                      />
+                    ))}
+                  </ol>
+                </details>
+              )}
             </section>
-            <aside className="day-side">
-              <section className="upcoming-panel">
+            {upcoming.length > 0 && (
+              <aside className="daily-upcoming">
                 <div className="section-heading">
-                  <h2>En el horizonte</h2>
-                  <BookOpen size={18} />
+                  <h2>Para los próximos días</h2>
+                  <Link href="/tasks" className="text-button">
+                    Ver todo
+                  </Link>
                 </div>
                 {upcoming.slice(0, 3).map((a) => (
-                  <div className="upcoming-row" key={a.id}>
-                    <span>
-                      {differenceInCalendarDays(
-                        new Date(a.start_datetime),
-                        now,
-                      ) === 0
-                        ? "Hoy"
-                        : format(new Date(a.start_datetime), "d MMM", {
-                            locale: es,
-                          })}
-                    </span>
-                    <strong>{a.title}</strong>
-                    <small>{a.subject?.name || "Personal"}</small>
-                  </div>
-                ))}
-                {!upcoming.length && (
-                  <p className="hint">
-                    Tus próximas entregas y planes aparecerán aquí.
-                  </p>
-                )}
-                {upcoming.some((a) => a.type === "exam") && (
                   <button
-                    className="button secondary small"
-                    onClick={onOpenPlanner}
+                    className="upcoming-note"
+                    key={a.id}
+                    onClick={() =>
+                      select(formatActivitiesToCalendarEvents([a])[0])
+                    }
                   >
+                    <time>
+                      {new Intl.DateTimeFormat("es-PE", {
+                        timeZone: "America/Lima",
+                        day: "numeric",
+                        month: "short",
+                      }).format(new Date(a.start_datetime))}
+                    </time>
+                    <span>
+                      <strong>{a.title}</strong>
+                      <small>{a.subject?.name || "Personal"}</small>
+                    </span>
+                    <ArrowRight size={16} />
+                  </button>
+                ))}
+                {upcoming.some((a) => a.type === "exam") && (
+                  <button className="button secondary" onClick={onOpenPlanner}>
                     Organizar mi estudio
                   </button>
                 )}
-              </section>
-              <section className="invitation-preview">
-                <div className="section-heading">
-                  <h2>Entre los dos</h2>
-                  <Link
-                    href="/together"
-                    aria-label="Ver todas las invitaciones"
-                  >
-                    <ArrowUpRight size={20} />
-                  </Link>
-                </div>
-                <InvitationList compact />
-              </section>
-            </aside>
+              </aside>
+            )}
           </div>
         </>
       )}
-      <ActivityModal isOpen={add} onClose={() => setAdd(false)} />
+      <EventDetailsModal
+        event={selectedEvent}
+        onClose={() => setSelectedEvent(null)}
+        onEdit={(event) => {
+          setSelectedEvent(null);
+          setEditing(event.sourceActivity!);
+        }}
+      />
+      <ActivityModal
+        isOpen={!!editing}
+        initialActivity={editing}
+        onClose={() => setEditing(null)}
+      />
     </div>
   );
 }

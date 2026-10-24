@@ -2,14 +2,14 @@
 
 import React, { useState, useMemo } from "react";
 import { DailyBriefing } from "@/components/dashboard/DailyBriefing";
-import { openQuickAdd } from "@/components/ai/QuickAddModal";
 import { SmartStudyPlannerModal } from "@/components/calendar/SmartStudyPlannerModal";
 import { useMemoria } from "@/lib/storage/store";
 import {
   projectRecurrentClassesForRange,
   formatActivitiesToCalendarEvents,
 } from "@/lib/calendar/projection";
-import { startOfWeek, endOfWeek } from "date-fns";
+import { addDays } from "date-fns";
+import { calendarDate } from "@/lib/calendar/presentation";
 
 export default function TodayPage() {
   const {
@@ -21,9 +21,8 @@ export default function TodayPage() {
   const [isPlannerOpen, setIsPlannerOpen] = useState(false);
 
   const busyEvents = useMemo(() => {
-    const now = new Date();
-    const start = startOfWeek(now, { weekStartsOn: 1 });
-    const end = endOfWeek(now, { weekStartsOn: 1 });
+    const start = calendarDate();
+    const end = addDays(start, 60);
 
     const projected = projectRecurrentClassesForRange(
       recurrentClasses.filter((c) => c.profile_id === activeProfile.id),
@@ -36,11 +35,8 @@ export default function TodayPage() {
   }, [recurrentClasses, activities, activeProfile.id, profiles]);
 
   return (
-    <div className="min-h-full bg-[#090d16]">
-      <DailyBriefing
-        onOpenQuickAdd={openQuickAdd}
-        onOpenPlanner={() => setIsPlannerOpen(true)}
-      />
+    <div className="today-page">
+      <DailyBriefing onOpenPlanner={() => setIsPlannerOpen(true)} />
 
       <SmartStudyPlannerModal
         isOpen={isPlannerOpen}

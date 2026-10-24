@@ -1,11 +1,12 @@
 "use client";
 
 import React from "react";
-import { format, isToday } from "date-fns";
+import { format, isSameDay } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarEvent } from "@/lib/calendar/types";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { layoutTimedEvents } from "@/lib/calendar/layout";
+import { eventTime, calendarDate } from "@/lib/calendar/presentation";
 
 interface Props {
   currentDate: Date;
@@ -24,16 +25,20 @@ export function DayView({
   onSlotClick,
   onToggleTask,
 }: Props) {
-  const START_HOUR = Math.min(7, ...events.map((e) => e.start.getHours()));
-  const END_HOUR = Math.max(22, ...events.map((e) => e.start.getHours()));
+  const START_HOUR = Math.min(
+    7,
+    ...events.map((e) => Number(eventTime(e.start).slice(0, 2))),
+  );
+  const END_HOUR = Math.max(
+    22,
+    ...events.map((e) => Number(eventTime(e.start).slice(0, 2))),
+  );
   const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
 
   const getEventPositionStyle = (event: CalendarEvent) => {
-    const startHour = event.start.getHours();
-    const startMinutes = event.start.getMinutes();
-    const endHour = event.end.getHours();
-    const endMinutes = event.end.getMinutes();
+    const startHour = Number(eventTime(event.start).slice(0, 2));
+    const startMinutes = Number(eventTime(event.start).slice(3, 5));
 
     const topMinutes = Math.max(
       0,
@@ -64,7 +69,7 @@ export function DayView({
       <div className="border-b border-slate-800 bg-[#0c121e] px-4 py-2.5">
         <h3 className="text-sm font-semibold capitalize text-white">
           {formattedDay}{" "}
-          {isToday(currentDate) && (
+          {isSameDay(currentDate, calendarDate()) && (
             <span className="text-blue-400 font-bold ml-2">(Hoy)</span>
           )}
         </h3>
@@ -97,7 +102,10 @@ export function DayView({
                 tabIndex={0}
                 aria-label={`Crear actividad a las ${hour}:00`}
                 onKeyDown={(e) => {
-                  if (e.key === "Enter") onSlotClick(currentDate, hour);
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    onSlotClick(currentDate, hour);
+                  }
                 }}
                 onClick={() => onSlotClick(currentDate, hour)}
                 style={{ height: `${HOUR_HEIGHT_PX}px` }}

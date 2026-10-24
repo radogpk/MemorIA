@@ -9,6 +9,8 @@ import {
 import { useMemoria } from "@/lib/storage/store";
 import { dateTimeInput, localDateTimeToIso } from "@/lib/ai/date-parser";
 import { Modal } from "@/components/ui/Modal";
+import { Mic } from "lucide-react";
+import { calendarDayKey } from "@/lib/calendar/presentation";
 export function ActivityModal({
   isOpen,
   onClose,
@@ -16,6 +18,7 @@ export function ActivityModal({
   initialHour,
   initialActivity,
   invite = false,
+  onOpenQuickAdd,
 }: {
   isOpen: boolean;
   onClose: () => void;
@@ -23,6 +26,7 @@ export function ActivityModal({
   initialHour?: number;
   initialActivity?: Activity | null;
   invite?: boolean;
+  onOpenQuickAdd?: () => void;
 }) {
   const {
     subjects,
@@ -45,12 +49,18 @@ export function ActivityModal({
   useEffect(() => {
     if (!isOpen) return;
     const d = initialDate ? new Date(initialDate) : new Date();
-    if (initialHour !== undefined) d.setHours(initialHour, 0, 0, 0);
+    const initialStart = initialDate
+      ? `${calendarDayKey(initialDate)}T${initialHour !== undefined ? `${String(initialHour).padStart(2, "0")}:00` : dateTimeInput(new Date().toISOString()).slice(11, 16)}`
+      : dateTimeInput(d.toISOString());
     setTitle(initialActivity?.title || "");
     setDescription(initialActivity?.description || "");
     setType(initialActivity?.type || (invite ? "personal" : "task"));
     setSubject(initialActivity?.subject_id || "");
-    setStart(dateTimeInput(initialActivity?.start_datetime || d.toISOString()));
+    setStart(
+      initialActivity
+        ? dateTimeInput(initialActivity.start_datetime)
+        : initialStart,
+    );
     setEnd(
       initialActivity?.end_datetime
         ? dateTimeInput(initialActivity.end_datetime)
@@ -97,6 +107,20 @@ export function ActivityModal({
             : "Nueva actividad"
       }
     >
+      {onOpenQuickAdd && (
+        <div className="activity-input-choice">
+          <button
+            className="text-button"
+            onClick={() => {
+              onClose();
+              onOpenQuickAdd();
+            }}
+          >
+            <Mic size={17} />
+            Usar voz o escribir una frase
+          </button>
+        </div>
+      )}
       <form
         className="dialog-body"
         onSubmit={(e) => {
@@ -302,7 +326,7 @@ export function ActivityModal({
             </button>
           )}
           <button className="button secondary" type="button" onClick={onClose}>
-            Cerrar
+            Cancelar
           </button>
           {!readOnly && (
             <button className="button" type="submit">

@@ -17,7 +17,7 @@ export function SubjectCard({
 }) {
   const [confirming, setConfirming] = useState(false);
   return (
-    <article className="course-row">
+    <article className="course-row" id={`course-${subject.id}`}>
       <div className="course-identity">
         <span className="course-dot" style={{ background: subject.color }} />
         <div>

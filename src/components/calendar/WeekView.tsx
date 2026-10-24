@@ -7,12 +7,16 @@ import {
   eachDayOfInterval,
   format,
   isSameDay,
-  isToday,
 } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarEvent } from "@/lib/calendar/types";
 import { CalendarEventCard } from "./CalendarEventCard";
 import { layoutTimedEvents } from "@/lib/calendar/layout";
+import {
+  eventTime,
+  fallsOnDay,
+  calendarDate,
+} from "@/lib/calendar/presentation";
 
 interface Props {
   currentDate: Date;
@@ -35,17 +39,21 @@ export function WeekView({
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const START_HOUR = Math.min(7, ...events.map((e) => e.start.getHours()));
-  const END_HOUR = Math.max(22, ...events.map((e) => e.start.getHours()));
+  const START_HOUR = Math.min(
+    7,
+    ...events.map((e) => Number(eventTime(e.start).slice(0, 2))),
+  );
+  const END_HOUR = Math.max(
+    22,
+    ...events.map((e) => Number(eventTime(e.start).slice(0, 2))),
+  );
   const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
   const hours = Array.from({ length: TOTAL_HOURS }, (_, i) => START_HOUR + i);
 
   // Position calculation
   const getEventPositionStyle = (event: CalendarEvent) => {
-    const startHour = event.start.getHours();
-    const startMinutes = event.start.getMinutes();
-    const endHour = event.end.getHours();
-    const endMinutes = event.end.getMinutes();
+    const startHour = Number(eventTime(event.start).slice(0, 2));
+    const startMinutes = Number(eventTime(event.start).slice(3, 5));
 
     const topMinutes = Math.max(
       0,
@@ -71,7 +79,10 @@ export function WeekView({
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-[#090d16]">
       {/* Week days header */}
-      <div className="grid grid-cols-8 border-b border-slate-800 bg-[#0c121e] text-xs font-semibold">
+      <div
+        className="grid border-b border-slate-800 bg-[#0c121e] text-xs font-semibold"
+        style={{ gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))" }}
+      >
         {/* Time column header */}
         <div className="border-r border-slate-800/80 p-2 text-center text-slate-500 text-[11px]">
           GMT-5
@@ -79,7 +90,7 @@ export function WeekView({
 
         {/* 7 Days headers */}
         {days.map((day) => {
-          const isCurrent = isToday(day);
+          const isCurrent = isSameDay(day, calendarDate());
           const dayName = format(day, "EEE", { locale: es }).toUpperCase();
           const dayNumber = format(day, "d");
 
@@ -108,8 +119,11 @@ export function WeekView({
       {/* Hourly Scrollable Grid */}
       <div className="flex-1 overflow-y-auto">
         <div
-          className="grid grid-cols-8 relative"
-          style={{ height: `${TOTAL_HOURS * HOUR_HEIGHT_PX}px` }}
+          className="grid relative"
+          style={{
+            height: `${TOTAL_HOURS * HOUR_HEIGHT_PX}px`,
+            gridTemplateColumns: "56px repeat(7, minmax(0, 1fr))",
+          }}
         >
           {/* Time scale column */}
           <div className="border-r border-slate-800/80 bg-[#0a0f1a]/50 text-right pr-2">
@@ -126,8 +140,8 @@ export function WeekView({
 
           {/* 7 Day Columns with Events */}
           {days.map((day) => {
-            const isCurrent = isToday(day);
-            const dayEvents = events.filter((e) => isSameDay(e.start, day));
+            const isCurrent = isSameDay(day, calendarDate());
+            const dayEvents = events.filter((e) => fallsOnDay(e, day));
             const eventLayout = layoutTimedEvents(dayEvents);
 
             return (
@@ -145,7 +159,10 @@ export function WeekView({
                     tabIndex={0}
                     aria-label={`Crear actividad el ${format(day, "dd/MM")} a las ${hour}:00`}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") onSlotClick(day, hour);
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSlotClick(day, hour);
+                      }
                     }}
                     onClick={() => onSlotClick(day, hour)}
                     style={{ height: `${HOUR_HEIGHT_PX}px` }}
